@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import type { ProviderId } from "@/lib/integrations/providers";
 
 type ProviderMetadata = {
@@ -125,18 +126,18 @@ export function ApiVault({
   return (
     <div data-azmin-ui className="min-h-screen bg-[#F5F6F8] text-[#0F172A]">
       <header className="border-b border-[#1E293B] bg-[#0B172A] shadow-[0_4px_18px_rgba(3,20,46,.18)] text-white">
-        <div className="mx-auto flex max-w-[1240px] items-center gap-4 px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-4 sm:px-8">
           <Image
             src="/brand/azmin-c1-mark.png"
             alt="AZMIN"
-            width={44}
-            height={44}
-            className="object-contain"
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 object-contain"
             priority
           />
-          <div className="border-l border-white/15 pl-4">
-            <p className="flex items-center gap-2 font-display text-xl font-extrabold tracking-[-.02em]"><span>AZMIN</span><span className="text-[#93C5FD]">Digital OS</span></p>
-            <p className="text-[11px] font-extrabold uppercase tracking-[.2em] text-[#BFDBFE]">Owner security</p>
+          <div>
+            <p className="flex items-center gap-1.5 font-display text-lg font-extrabold leading-none tracking-[-.02em]"><span>AZMIN</span><span className="text-[#93C5FD]">Digital OS</span></p>
+            <p className="mt-1 text-[11px] font-extrabold uppercase tracking-[.2em] text-[#BFDBFE]">Owner security</p>
           </div>
           <Link href="/azmin" className="ml-auto rounded-xl border border-white/35 bg-white/[0.05] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/10">
             Back to command center
@@ -163,7 +164,7 @@ export function ApiVault({
         {!data?.vaultReady && (
           <section className="mt-6 rounded-2xl border border-[#F0C36A] bg-[#FFF7E5] p-5">
             <div className="flex gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#FFDF9B] font-black text-[#754600]">!</span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#FFDF9B] text-[#754600]"><AlertTriangle size={18} aria-hidden /></span>
               <div>
                 <h2 className="font-display text-base font-extrabold text-[#5E3B00]">Vault setup required</h2>
                 <p className="mt-1 text-sm leading-6 text-[#765A27]">

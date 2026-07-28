@@ -112,7 +112,7 @@ export function CompanyWorkspace({ company, canManage, isActive }: { company: Co
   return <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
     <header className="border-b border-[#C8D8EA] bg-white/90 px-5 py-4 backdrop-blur-xl sm:px-8">
       <div className="mx-auto flex max-w-7xl items-center gap-3">
-        <Link href="/azmin" className="relative h-10 w-10 overflow-hidden rounded-xl border border-[#C8D8EA] bg-[#F4FAFF]"><Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain p-0.5" /></Link>
+        <Link href="/azmin" className="relative h-10 w-10 shrink-0"><Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" /></Link>
         <span className="text-[#A0B1C2]">/</span><Link href="/azmin/companies" className="text-sm font-bold text-[#405E78]">Companies</Link><span className="text-[#A0B1C2]">/</span><span className="truncate text-sm font-bold">{company.name}</span>
         <div className="ml-auto">
           {isActive ? (

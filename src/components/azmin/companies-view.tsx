@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight, Check, X } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 
 type CompanyRow = {
@@ -37,8 +38,8 @@ export function CompaniesView({ companies, canManage, userName, userEmail, userR
       <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
         <div className="mx-auto flex max-w-7xl items-center gap-3">
           <Link href="/azmin" className="flex items-center gap-3 rounded-xl focus-visible:ring-2 focus-visible:ring-[#087CFA]">
-            <span className="relative h-11 w-11 overflow-hidden rounded-xl border border-[#AFC6DE] bg-[#F4FAFF] shadow-[0_8px_24px_rgba(8,124,250,.2)]">
-              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="44px" className="object-contain p-0.5" />
+            <span className="relative h-10 w-10 shrink-0">
+              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
             </span>
             <span>
               <strong className="block font-display text-[15px] font-bold text-[#03142E]">AZMIN Digital OS</strong>
@@ -152,14 +153,14 @@ function CompanyCard({ company }: { company: CompanyRow }) {
       </div>
       <div className="flex shrink-0 items-center justify-between gap-4 border-t border-[#DCE7F2] pt-3 sm:block sm:min-w-36 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0 sm:text-right">
         <span className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-extrabold ${brainReady ? "bg-[#CFF5FF] text-[#084E78]" : "bg-[#E7EDF4] text-[#405E78]"}`}>{brainReady ? "Brain ready" : "Setup required"}</span>
-        <span className="mt-0 block text-xs font-extrabold text-[#0758C9] sm:mt-3">Open workspace <span aria-hidden="true">-&gt;</span></span>
+        <span className="mt-0 inline-flex items-center gap-1 text-xs font-extrabold text-[#0758C9] sm:mt-3">Open workspace <ArrowRight size={13} aria-hidden /></span>
       </div>
     </Link>
   );
 }
 
 function SafetyItem({ title, detail }: { title: string; detail: string }) {
-  return <li className="flex gap-3"><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#22D3EE] text-xs font-black text-[#03142E]">OK</span><span><strong className="block text-sm">{title}</strong><span className="mt-0.5 block text-xs leading-5 text-[#AFC9DD]">{detail}</span></span></li>;
+  return <li className="flex gap-3"><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#22D3EE] text-[#03142E]"><Check size={14} strokeWidth={3} aria-hidden /></span><span><strong className="block text-sm">{title}</strong><span className="mt-0.5 block text-xs leading-5 text-[#AFC9DD]">{detail}</span></span></li>;
 }
 
 function NewCompanyDialog({ onClose }: { onClose: () => void }) {
@@ -192,7 +193,7 @@ function NewCompanyDialog({ onClose }: { onClose: () => void }) {
       <form onSubmit={submit} className="w-full max-w-xl rounded-[26px] border border-[#BFD1E3] bg-white p-6 shadow-2xl sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div><p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#0758C9]">Quick onboarding</p><h2 className="mt-1 font-display text-2xl font-bold">Add a company</h2><p className="mt-1 text-sm font-medium text-[#536F89]">Only five essential fields. Configure the Company Brain next.</p></div>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#C8D8EA] bg-[#EDF3F9] text-xl font-bold text-[#234B70]">X</button>
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#C8D8EA] bg-[#EDF3F9] text-[#234B70] transition hover:border-[#087CFA] hover:text-[#0758C9]"><X size={18} aria-hidden /></button>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <Field label="Company name" required><input autoFocus required minLength={2} value={form.name} onChange={(e) => update("name", e.target.value)} className={inputClass} placeholder="e.g. Acme Trading" /></Field>

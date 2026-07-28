@@ -161,7 +161,12 @@ body {
 [data-azmin-ui] textarea,
 [data-azmin-ui] select {
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
+  /* Field labels wrap their input in a bold, muted-blue <label>; without these
+     the value text inherits that bold weight and low-contrast color, which
+     reads heavy and tiring. Values must be regular weight in strong ink. */
+  font-weight: 400;
+  color: #0f2137;
 }
 [data-azmin-ui] input::placeholder,
 [data-azmin-ui] textarea::placeholder {
@@ -170,4 +175,78 @@ body {
 }
 [data-azmin-ui] button:disabled {
   opacity: 0.58;
+}
+
+/* Modern weight scale. The legacy AZMIN UI leaned on 800/900 weights for even
+   tiny uppercase labels, which reads cramped and dated. Cap the heaviest
+   weights so micro-labels and controls feel refined; large display numerals
+   keep their heft. One knob here instead of editing every inline class. */
+[data-azmin-ui] .font-black {
+  font-weight: 800;
+}
+[data-azmin-ui] .font-extrabold {
+  font-weight: 700;
+}
+/* Uppercase eyebrows/badges and interactive controls: settle at 600. The
+   compound `.uppercase.font-*` selector outranks the single-class rules above,
+   so only these small labels drop — numeric stats stay bold. */
+[data-azmin-ui] .uppercase.font-black,
+[data-azmin-ui] .uppercase.font-extrabold,
+[data-azmin-ui] button.font-extrabold,
+[data-azmin-ui] summary.font-extrabold,
+[data-azmin-ui] a.font-extrabold {
+  font-weight: 600;
+}
+
+/* Contrast lift. The legacy AZMIN palette used washed mid-blue greys
+   (#476987, #4C6A86, #526F8A …) for labels, helper text and body copy on light
+   surfaces — legible-but-tiring, and the top complaint. Darken every one of
+   those secondary-text shades to a single strong slate. These shades are only
+   ever used as text on light panels; the light-on-dark accent colors used
+   inside navy cards are different values and are intentionally left untouched.
+   Overriding `color` only never disturbs any border-/bg-* use of the same hex. */
+[data-azmin-ui] [class*="#476987"],
+[data-azmin-ui] [class*="#4C6A86"],
+[data-azmin-ui] [class*="#45647F"],
+[data-azmin-ui] [class*="#526F8A"],
+[data-azmin-ui] [class*="#536F89"],
+[data-azmin-ui] [class*="#294E6E"],
+[data-azmin-ui] [class*="#234B70"],
+[data-azmin-ui] [class*="#385A78"],
+[data-azmin-ui] [class*="#41617E"],
+[data-azmin-ui] [class*="#405E78"],
+[data-azmin-ui] [class*="#456784"],
+[data-azmin-ui] [class*="#475569"],
+[data-azmin-ui] [class*="#3F4C5E"],
+[data-azmin-ui] [class*="#70869B"],
+[data-azmin-ui] [class*="#72899E"],
+[data-azmin-ui] [class*="#5E7891"] {
+  color: #26384c !important;
+}
+
+/* Form polish, applied to every AZMIN form at once. Field labels used 700/800
+   weight which crowds the field below them — settle at 600. Unify field corner
+   radius, give inputs/selects a comfortable min height (also a better tap
+   target), and smooth the focus transition. */
+[data-azmin-ui] label.font-bold,
+[data-azmin-ui] label.font-extrabold {
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+[data-azmin-ui] input:not([type="checkbox"]):not([type="radio"]),
+[data-azmin-ui] textarea,
+[data-azmin-ui] select {
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+[data-azmin-ui] input:not([type="checkbox"]):not([type="radio"]),
+[data-azmin-ui] select {
+  min-height: 2.75rem;
+}
+[data-azmin-ui] input:focus,
+[data-azmin-ui] textarea:focus,
+[data-azmin-ui] select:focus {
+  outline: none;
+  border-color: #087cfa;
+  box-shadow: 0 0 0 3px rgba(8, 124, 250, 0.16);
 }

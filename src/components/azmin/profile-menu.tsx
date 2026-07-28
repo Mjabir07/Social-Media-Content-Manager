@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export function AzminProfileMenu({ name, email, role }: { name: string; email: string; role: string }) {
@@ -45,9 +46,9 @@ export function AzminProfileMenu({ name, email, role }: { name: string; email: s
             </div>
           </div>
           <nav className="p-2 text-sm font-bold text-[#294E6E]">
-            <Link href="/account" onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-[#EDF4FB]">Account settings <span aria-hidden>-&gt;</span></Link>
-            <Link href="/azmin/companies" onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-[#EDF4FB]">Company workspaces <span aria-hidden>-&gt;</span></Link>
-            {role === "OWNER" && <Link href="/azmin/settings/integrations" onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-[#EDF4FB]">Integrations &amp; API Vault <span aria-hidden>-&gt;</span></Link>}
+            <Link href="/account" onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-[#EDF4FB]">Account settings <ChevronRight size={15} className="text-[#7C93AB]" aria-hidden /></Link>
+            <Link href="/azmin/companies" onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-[#EDF4FB]">Company workspaces <ChevronRight size={15} className="text-[#7C93AB]" aria-hidden /></Link>
+            {role === "OWNER" && <Link href="/azmin/settings/integrations" onClick={() => setOpen(false)} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-[#EDF4FB]">Integrations &amp; API Vault <ChevronRight size={15} className="text-[#7C93AB]" aria-hidden /></Link>}
             <button onClick={() => signOut({ callbackUrl: "/login" })} className="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-[#A12C2C] hover:bg-[#FFF0F0]">Sign out</button>
           </nav>
         </div>

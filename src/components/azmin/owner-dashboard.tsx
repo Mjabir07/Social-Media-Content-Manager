@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { CompanySwitcher, type SwitcherCompany } from "@/components/azmin/company-switcher";
 import type { DashboardData } from "@/lib/data";
@@ -248,18 +249,15 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className={`${compact ? "h-9 w-9" : "h-[52px] w-[52px]"} relative shrink-0`}>
-        <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes={compact ? "36px" : "52px"} className="object-contain" />
+    <div className="flex items-center gap-2.5">
+      <div className={`${compact ? "h-9 w-9" : "h-10 w-10"} relative shrink-0`}>
+        <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes={compact ? "36px" : "40px"} className="object-contain" />
       </div>
       {!compact && (
-        <>
-          <span className="h-8 w-px bg-white/15" />
-          <div>
-            <div className="font-display text-xl font-extrabold leading-none tracking-[-0.035em] text-white">AZMIN</div>
-            <div className="mt-2 text-[9px] font-extrabold uppercase tracking-[0.25em] text-[#72DFEF]">Digital OS</div>
-          </div>
-        </>
+        <div className="min-w-0">
+          <div className="font-display text-[19px] font-extrabold leading-none tracking-[-0.03em] text-white">AZMIN</div>
+          <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.22em] text-[#72DFEF]">Digital OS</div>
+        </div>
       )}
     </div>
   );
@@ -273,7 +271,7 @@ function NavItem({ icon, label, active, badge, href }: { icon: GlyphName; label:
 
 function Metric({ label, value, helper, icon, tone, href }: { label: string; value: string | number; helper: string; icon: GlyphName; tone: "navy" | "amber" | "teal" | "blue"; href: string }) {
   const tones = { navy: "bg-[#E7EEF0] text-[#03142E]", amber: "bg-[#FFF1D5] text-[#9A6711]", teal: "bg-[#DDF5FF] text-[#087CFA]", blue: "bg-[#E5EEFF] text-[#3564A7]" };
-  return <Link href={href} className="group rounded-[15px] border border-[#C5D6E6] bg-white p-4 shadow-[0_12px_32px_rgba(3,20,46,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(7,27,43,0.08)]"><div className="flex items-start justify-between"><div className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Glyph name={icon} /></div><span className="text-sm text-[#45647F] transition group-hover:translate-x-0.5 group-hover:text-[#03142E]">→</span></div><div className="mt-3 text-3xl font-black tracking-[-0.045em] tabular-nums text-[#03142E]">{value}</div><div className="mt-1 text-xs font-extrabold uppercase tracking-[0.08em] text-[#234B70]">{label}</div><div className="mt-1 text-xs font-medium text-[#45647F]">{helper}</div></Link>;
+  return <Link href={href} className="group rounded-[15px] border border-[#C5D6E6] bg-white p-4 shadow-[0_12px_32px_rgba(3,20,46,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(7,27,43,0.08)]"><div className="flex items-start justify-between"><div className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Glyph name={icon} /></div><ArrowRight size={16} className="text-[#45647F] transition group-hover:translate-x-0.5 group-hover:text-[#03142E]" aria-hidden /></div><div className="mt-3 text-3xl font-black tracking-[-0.045em] tabular-nums text-[#03142E]">{value}</div><div className="mt-1 text-xs font-extrabold uppercase tracking-[0.08em] text-[#234B70]">{label}</div><div className="mt-1 text-xs font-medium text-[#45647F]">{helper}</div></Link>;
 }
 
 function Donut({ data }: { data: DashboardData }) {
