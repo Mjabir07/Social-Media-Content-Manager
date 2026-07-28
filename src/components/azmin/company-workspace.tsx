@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CompanyAgents } from "@/components/azmin/company-agents";
 
 type Company = {
   id: string; name: string; relationshipType: string; industry: string | null; website: string | null;
@@ -20,7 +21,7 @@ type ResearchResult = {
   sources: { url: string; title: string }[];
 };
 
-type Tab = "overview" | "brand" | "brain";
+type Tab = "overview" | "brand" | "brain" | "agents";
 
 export function CompanyWorkspace({ company, canManage, isActive }: { company: Company; canManage: boolean; isActive: boolean }) {
   const router = useRouter();
@@ -138,9 +139,10 @@ export function CompanyWorkspace({ company, canManage, isActive }: { company: Co
         <TabButton active={tab === "overview"} onClick={() => setTab("overview")}>Overview</TabButton>
         <TabButton active={tab === "brand"} onClick={() => setTab("brand")}>Brand profile</TabButton>
         <TabButton active={tab === "brain"} onClick={() => setTab("brain")}>Company Brain</TabButton>
+        <TabButton active={tab === "agents"} onClick={() => setTab("agents")}>AI agents</TabButton>
       </nav>
 
-      {canManage && (
+      {canManage && tab !== "agents" && (
         <section className="mt-5 rounded-2xl border border-[#9DDDF0] bg-gradient-to-r from-[#E9FAFF] to-[#F6FBFF] p-4 shadow-[0_10px_30px_rgba(3,20,46,.05)] sm:flex sm:items-center sm:gap-5 sm:p-5">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-black uppercase tracking-[.15em] text-[#0758C9]">AI company research</p>
@@ -153,7 +155,7 @@ export function CompanyWorkspace({ company, canManage, isActive }: { company: Co
         </section>
       )}
 
-      {research && (
+      {research && tab !== "agents" && (
         <section className="mt-4 rounded-2xl border border-[#B8D5E8] bg-white px-4 py-3 text-sm text-[#355B78]" aria-live="polite">
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-[#03142E]">AI draft ready for review</strong>
@@ -165,12 +167,20 @@ export function CompanyWorkspace({ company, canManage, isActive }: { company: Co
         </section>
       )}
 
+      {tab !== "agents" && (
       <section className="mt-5 rounded-3xl border border-[#C8D8EA] bg-white p-6 shadow-[0_12px_40px_rgba(3,20,46,.05)] sm:p-8">
         {tab === "overview" && <div><SectionTitle title="Company overview" subtitle="Basic identity and relationship with AZMIN." /><div className="mt-6 grid gap-5 sm:grid-cols-2"><Field label="Company name"><input disabled={!canManage} value={form.name} onChange={(e) => update("name", e.target.value)} className={inputClass} /></Field><Field label="Relationship"><select disabled={!canManage} value={form.relationshipType} onChange={(e) => update("relationshipType", e.target.value)} className={inputClass}><option value="OWN_BRAND">Own brand</option><option value="CLIENT">Agency client</option><option value="PARTNER">Sales / commission partner</option><option value="JOINT_VENTURE">Joint venture</option></select></Field><Field label="Industry"><input disabled={!canManage} value={form.industry} onChange={(e) => update("industry", e.target.value)} className={inputClass} /></Field><Field label="Website"><input disabled={!canManage} type="url" value={form.website} onChange={(e) => update("website", e.target.value)} className={inputClass} /></Field><div className="sm:col-span-2"><Field label="Business description"><textarea disabled={!canManage} value={form.description} onChange={(e) => update("description", e.target.value)} className={inputClass + " min-h-28"} /></Field></div></div></div>}
         {tab === "brand" && <div><SectionTitle title="Brand profile" subtitle="How AZMIN agents should understand and represent this brand." /><div className="mt-6 grid gap-5 sm:grid-cols-2"><Field label="Tagline"><input disabled={!canManage} value={form.tagline} onChange={(e) => update("tagline", e.target.value)} className={inputClass} /></Field><Field label="Brand voice"><textarea disabled={!canManage} value={form.brandVoice} onChange={(e) => update("brandVoice", e.target.value)} className={inputClass + " min-h-24"} placeholder="Professional, confident, clear..." /></Field><Field label="Target audiences (one per line)"><textarea disabled={!canManage} value={form.targetAudiences} onChange={(e) => update("targetAudiences", e.target.value)} className={inputClass + " min-h-32"} /></Field><Field label="Services / offerings (one per line)"><textarea disabled={!canManage} value={form.offerings} onChange={(e) => update("offerings", e.target.value)} className={inputClass + " min-h-32"} /></Field><Field label="Differentiators (one per line)"><textarea disabled={!canManage} value={form.differentiators} onChange={(e) => update("differentiators", e.target.value)} className={inputClass + " min-h-32"} /></Field><Field label="Content rules"><textarea disabled={!canManage} value={form.contentRules} onChange={(e) => update("contentRules", e.target.value)} className={inputClass + " min-h-32"} placeholder="Words, claims, styles, or topics to use or avoid..." /></Field></div></div>}
         {tab === "brain" && <div><SectionTitle title="Company Brain" subtitle="Private AI instructions scoped only to this company. They are never shared with another company." /><div className="mt-4 rounded-2xl border border-[#B9E9FA] bg-[#ECFAFF] px-4 py-3 text-xs leading-5 text-[#17577A]"><strong>Isolation rule:</strong> every read and update requires both this company ID and your AZMIN workspace ID.</div><div className="mt-6 grid gap-5 sm:grid-cols-2"><Field label="Approved company facts"><textarea disabled={!canManage} value={form.companyFacts} onChange={(e) => update("companyFacts", e.target.value)} className={inputClass + " min-h-40"} placeholder="Facts, locations, services, pricing principles..." /></Field><Field label="AI operating instructions"><textarea disabled={!canManage} value={form.aiInstructions} onChange={(e) => update("aiInstructions", e.target.value)} className={inputClass + " min-h-40"} placeholder="Always do..., never do..., ask approval before..." /></Field><Field label="Sales guidance"><textarea disabled={!canManage} value={form.salesGuidance} onChange={(e) => update("salesGuidance", e.target.value)} className={inputClass + " min-h-32"} placeholder="Lead qualification, objections, commission rules..." /></Field><Field label="Content guidance"><textarea disabled={!canManage} value={form.contentGuidance} onChange={(e) => update("contentGuidance", e.target.value)} className={inputClass + " min-h-32"} placeholder="Themes, formats, calls to action..." /></Field></div></div>}
         {canManage && <div className="mt-7 flex items-center justify-end gap-3 border-t border-[#E4ECF5] pt-5">{message && <span className={`text-xs font-bold ${message.includes("successfully") || message.includes("activated") || message.includes("ready") ? "text-emerald-600" : "text-red-600"}`}>{message}</span>}<button onClick={save} disabled={saving || analyzing} className="rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_24px_rgba(8,124,250,.2)] disabled:opacity-50">{saving ? "Saving..." : "Save company"}</button></div>}
       </section>
+      )}
+
+      {tab === "agents" && (
+        <section className="mt-5 rounded-3xl border border-[#C8D8EA] bg-white p-6 shadow-[0_12px_40px_rgba(3,20,46,.05)] sm:p-8">
+          <CompanyAgents companyId={company.id} canManage={canManage} />
+        </section>
+      )}
     </div>
   </main>;
 }
