@@ -39,6 +39,7 @@ model User {
   resetTokens   PasswordResetToken[]
   notifications Notification[]
   agentProfiles AgentProfile[]       @relation("AgentCreatedBy")
+  services      Service[]            @relation("ServiceCreatedBy")
 }
 
 model Workspace {
@@ -58,6 +59,7 @@ model Workspace {
   companies           Company[]
   providerCredentials ProviderCredential[]
   agentProfiles       AgentProfile[]
+  services            Service[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -108,6 +110,7 @@ model Company {
   brandProfile BrandProfile?
   brain        CompanyBrain?
   agents       AgentProfile[]
+  services     Service[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -167,6 +170,34 @@ model AgentProfile {
   createdBy User?     @relation("AgentCreatedBy", fields: [createdById], references: [id])
 
   @@index([workspaceId, companyId, status])
+}
+
+// Phase 2 — Universal service catalogue. A service is what a company sells or
+// AZMIN delivers. workspace-scoped; companyId is optional (null = a shared
+// catalogue item; set = a specific company's offering). Prices are stored in
+// minor currency units to avoid float rounding; null price = quote/custom.
+model Service {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  companyId    String?
+  name         String
+  category     String
+  description  String?
+  pricingModel String   @default("PROJECT") // FIXED | HOURLY | RETAINER | PROJECT | CUSTOM
+  priceCents   Int?
+  currency     String   @default("AED")
+  unit         String? // e.g. "per month", "per project"
+  status       String   @default("ACTIVE") // ACTIVE | ARCHIVED
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdBy User?     @relation("ServiceCreatedBy", fields: [createdById], references: [id])
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, companyId])
 }
 
 // Immutable audit trail of who did what. Actor fields are denormalized so an
