@@ -28,6 +28,7 @@ export type LeadInput = {
   source?: string | null;
   serviceId?: string | null;
   companyId?: string | null;
+  partnershipId?: string | null;
   valueCents?: number | null;
   currency?: string;
   notes?: string | null;
@@ -43,6 +44,7 @@ export async function createLead(workspaceId: string, createdById: string | null
       createdById: createdById ?? undefined,
       companyId: input.companyId ?? null,
       serviceId: input.serviceId ?? null,
+      partnershipId: input.partnershipId ?? null,
       name: input.name,
       email: input.email ?? null,
       phone: input.phone ?? null,
@@ -80,6 +82,7 @@ export async function updateLead(
       ...(data.source !== undefined ? { source: data.source } : {}),
       ...(data.serviceId !== undefined ? { serviceId: data.serviceId } : {}),
       ...(data.companyId !== undefined ? { companyId: data.companyId } : {}),
+      ...(data.partnershipId !== undefined ? { partnershipId: data.partnershipId } : {}),
       ...(data.valueCents !== undefined ? { valueCents: data.valueCents } : {}),
       ...(data.currency !== undefined ? { currency: data.currency } : {}),
       ...(data.notes !== undefined ? { notes: data.notes } : {}),

@@ -14,6 +14,7 @@ const createSchema = z.object({
   source: z.string().trim().max(60).nullish(),
   serviceId: z.string().trim().max(40).nullish(),
   companyId: z.string().trim().max(40).nullish(),
+  partnershipId: z.string().trim().max(40).nullish(),
   valueCents: z.number().int().min(0).max(1_000_000_000).nullish(),
   currency: z.string().trim().length(3).toUpperCase().optional(),
   notes: z.string().trim().max(2000).nullish(),

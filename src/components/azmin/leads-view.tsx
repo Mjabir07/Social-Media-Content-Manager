@@ -15,11 +15,11 @@ type Lead = {
 };
 type Ref = { id: string; name: string };
 
-type Draft = { name: string; email: string; phone: string; source: string; companyId: string; serviceId: string; value: string; notes: string };
-const emptyDraft: Draft = { name: "", email: "", phone: "", source: "", companyId: "", serviceId: "", value: "", notes: "" };
+type Draft = { name: string; email: string; phone: string; source: string; companyId: string; serviceId: string; partnershipId: string; value: string; notes: string };
+const emptyDraft: Draft = { name: "", email: "", phone: "", source: "", companyId: "", serviceId: "", partnershipId: "", value: "", notes: "" };
 
-export function LeadsView({ leads, companies, services, canManage, userName, userEmail, userRole }: {
-  leads: Lead[]; companies: Ref[]; services: Ref[]; canManage: boolean; userName: string; userEmail: string; userRole: string;
+export function LeadsView({ leads, companies, services, partners, canManage, userName, userEmail, userRole }: {
+  leads: Lead[]; companies: Ref[]; services: Ref[]; partners: Ref[]; canManage: boolean; userName: string; userEmail: string; userRole: string;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -40,7 +40,7 @@ export function LeadsView({ leads, companies, services, canManage, userName, use
     const valueCents = draft.value.trim() === "" ? null : Math.round(Number(draft.value) * 100);
     const ok = await call("/api/leads", "POST", {
       name: draft.name, email: draft.email || null, phone: draft.phone || null, source: draft.source || null,
-      companyId: draft.companyId || null, serviceId: draft.serviceId || null,
+      companyId: draft.companyId || null, serviceId: draft.serviceId || null, partnershipId: draft.partnershipId || null,
       valueCents: Number.isFinite(valueCents as number) ? valueCents : null, notes: draft.notes || null,
     }, "add");
     if (ok) setDraft(null);
@@ -126,6 +126,7 @@ export function LeadsView({ leads, companies, services, canManage, userName, use
               <Field label="Estimated value"><input inputMode="decimal" value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} className={inputClass} placeholder="e.g. 5000" /></Field>
               {companies.length > 0 && <Field label="Company"><select value={draft.companyId} onChange={(e) => setDraft({ ...draft, companyId: e.target.value })} className={inputClass}><option value="">— none —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>}
               {services.length > 0 && <Field label="Interested in"><select value={draft.serviceId} onChange={(e) => setDraft({ ...draft, serviceId: e.target.value })} className={inputClass}><option value="">— none —</option>{services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>}
+              {partners.length > 0 && <Field label="Referred by partner"><select value={draft.partnershipId} onChange={(e) => setDraft({ ...draft, partnershipId: e.target.value })} className={inputClass}><option value="">— none —</option>{partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}
               <div className="sm:col-span-2"><Field label="Notes"><textarea value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} className={inputClass + " min-h-24"} placeholder="What do they need?" /></Field></div>
             </div>
             <p className="mt-3 rounded-xl bg-[#F1F5FA] px-3 py-2 text-xs leading-5 text-[#4C6A86]">Saving fires your <strong>LEAD_CREATED</strong> automations (WhatsApp welcome, team alert…) if any are on.</p>

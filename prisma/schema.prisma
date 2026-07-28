@@ -63,6 +63,8 @@ model Workspace {
   connections         ChannelConnection[]
   automations         Automation[]
   leads               Lead[]
+  partnerships        Partnership[]
+  commissionPayments  CommissionPayment[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -117,6 +119,7 @@ model Company {
   connections  ChannelConnection[]
   automations  Automation[]
   leads        Lead[]
+  partnerships Partnership[]       @relation("PartnerOf")
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -266,30 +269,78 @@ model Automation {
 // LEAD_CREATED automation trigger. `score`/`aiSummary` hold the AI/heuristic
 // qualification. stage: NEW | QUALIFIED | PROPOSAL | WON | LOST
 model Lead {
-  id          String   @id @default(cuid())
-  workspaceId String
-  companyId   String?
-  serviceId   String?
-  name        String
-  email       String?
-  phone       String?
-  source      String?
-  stage       String   @default("NEW")
-  valueCents  Int?
-  currency    String   @default("AED")
-  notes       String?
-  score       Int?
-  aiSummary   String?
-  createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  workspaceId   String
+  companyId     String?
+  serviceId     String?
+  partnershipId String?
+  name          String
+  email         String?
+  phone         String?
+  source        String?
+  stage         String   @default("NEW")
+  valueCents    Int?
+  currency      String   @default("AED")
+  notes         String?
+  score         Int?
+  aiSummary     String?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  service   Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company     Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  service     Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  partnership Partnership?        @relation(fields: [partnershipId], references: [id], onDelete: SetNull)
+  payments    CommissionPayment[]
 
   @@index([workspaceId, stage])
   @@index([workspaceId, companyId])
+}
+
+// A commission agreement with a partner company. Percentage rate is stored in
+// basis points (1000 = 10%) to stay integer-exact; FLAT uses commissionFlatCents.
+model Partnership {
+  id                  String   @id @default(cuid())
+  workspaceId         String
+  partnerCompanyId    String
+  name                String?
+  commissionType      String   @default("PERCENT") // PERCENT | FLAT
+  commissionRateBps   Int      @default(1000)
+  commissionFlatCents Int?
+  currency            String   @default("AED")
+  notes               String?
+  status              String   @default("ACTIVE") // ACTIVE | ENDED
+  createdById         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  partnerCompany Company             @relation("PartnerOf", fields: [partnerCompanyId], references: [id], onDelete: Cascade)
+  leads          Lead[]
+  payments       CommissionPayment[]
+
+  @@index([workspaceId, status])
+}
+
+// A recorded commission settlement (often partial) against a partnership.
+model CommissionPayment {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  partnershipId String
+  leadId        String?
+  amountCents   Int
+  currency      String   @default("AED")
+  note          String?
+  paidAt        DateTime @default(now())
+  createdById   String?
+  createdAt     DateTime @default(now())
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  partnership Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  lead        Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, partnershipId])
 }
 
 // One execution record for an automation. status: SUCCESS | FAILED | SIMULATED | SKIPPED
