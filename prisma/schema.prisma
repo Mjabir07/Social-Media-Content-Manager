@@ -65,6 +65,7 @@ model Workspace {
   leads               Lead[]
   partnerships        Partnership[]
   commissionPayments  CommissionPayment[]
+  socialPosts         SocialPost[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -120,6 +121,7 @@ model Company {
   automations  Automation[]
   leads        Lead[]
   partnerships Partnership[]       @relation("PartnerOf")
+  socialPosts  SocialPost[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -233,6 +235,7 @@ model ChannelConnection {
   workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
   automations Automation[]
+  postTargets PostTarget[]
 
   @@index([workspaceId, companyId])
 }
@@ -296,6 +299,47 @@ model Lead {
 
   @@index([workspaceId, stage])
   @@index([workspaceId, companyId])
+}
+
+// Phase 8-style multi-platform publishing. Write a post once; it fans out to
+// one PostTarget per connected channel. status: DRAFT | SCHEDULED | PUBLISHED |
+// PARTIAL | FAILED
+model SocialPost {
+  id          String    @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  content     String
+  imageUrl    String?
+  status      String    @default("DRAFT")
+  scheduledAt DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  targets   PostTarget[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, scheduledAt])
+}
+
+// One platform destination for a SocialPost. status: PENDING | PUBLISHED |
+// SIMULATED | FAILED | SKIPPED
+model PostTarget {
+  id           String    @id @default(cuid())
+  postId       String
+  connectionId String?
+  channel      String
+  status       String    @default("PENDING")
+  detail       String?
+  externalId   String?
+  publishedAt  DateTime?
+
+  post       SocialPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  connection ChannelConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([postId])
 }
 
 // A commission agreement with a partner company. Percentage rate is stored in
