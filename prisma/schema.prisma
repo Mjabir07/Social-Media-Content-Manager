@@ -38,6 +38,7 @@ model User {
   skillUpdates  Skill[]
   resetTokens   PasswordResetToken[]
   notifications Notification[]
+  agentProfiles AgentProfile[]       @relation("AgentCreatedBy")
 }
 
 model Workspace {
@@ -56,6 +57,7 @@ model Workspace {
   notifications       Notification[]
   companies           Company[]
   providerCredentials ProviderCredential[]
+  agentProfiles       AgentProfile[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -102,9 +104,10 @@ model Company {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   brandProfile BrandProfile?
   brain        CompanyBrain?
+  agents       AgentProfile[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -137,6 +140,33 @@ model CompanyBrain {
   updatedAt       DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+// A named, company-scoped AI operator. Its effective runtime system prompt is
+// composed from the company Brand Profile + Company Brain + this profile's own
+// instructions (see src/lib/agents.ts), so an agent can never carry another
+// company's context. `autonomy` is the automation dial: how far it may act
+// before a human approves (SUGGEST | DRAFT | AUTOPILOT).
+model AgentProfile {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  companyId    String
+  name         String
+  role         String
+  systemPrompt String
+  providerId   String? // preferred vault provider (ProviderCredential.provider); null -> router default
+  autonomy     String   @default("SUGGEST") // SUGGEST | DRAFT | AUTOPILOT
+  status       String   @default("ACTIVE") // ACTIVE | DISABLED
+  isDefault    Boolean  @default(false)
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("AgentCreatedBy", fields: [createdById], references: [id])
+
+  @@index([workspaceId, companyId, status])
 }
 
 // Immutable audit trail of who did what. Actor fields are denormalized so an
