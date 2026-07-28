@@ -117,7 +117,7 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
   // Notifications → browser, or an active Focus/Do Not Disturb).
   function testDesktopAlert() {
     try {
-      new Notification("MediaChat", {
+      new Notification("AZMIN Digital OS", {
         body: "Test — desktop alerts are working ✓",
       });
     } catch {

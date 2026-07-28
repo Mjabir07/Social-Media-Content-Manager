@@ -10,7 +10,7 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
-  if (user) redirect("/");
+  if (user) redirect("/azmin");
 
   const notice = sp.reset
     ? "Password updated — sign in with your new password."
@@ -19,7 +19,7 @@ export default async function LoginPage({
       : null;
 
   return (
-    <AuthCard title="Welcome back" subtitle="Sign in to your Social Media Content Manager workspace.">
+    <AuthCard title="Welcome back" subtitle="Sign in to your AZMIN Digital workspace.">
       {notice && (
         <div className="mb-3 rounded-[10px] bg-teal-soft px-3 py-2.5 text-[12.5px] text-teal-dark">
           {notice}

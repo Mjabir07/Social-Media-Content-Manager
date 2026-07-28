@@ -1,4 +1,5 @@
 import { Icon } from "@/components/ui/icons";
+import Image from "next/image";
 
 export function AuthCard({
   title,
@@ -19,15 +20,15 @@ export function AuthCard({
         <div className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:22px_22px]" />
 
         <div className="relative flex items-center gap-2.5">
-          <span className="grid h-10 w-10 place-items-center rounded-[13px] bg-white/15 text-lg backdrop-blur-sm">
-            ◆
+          <span className="relative h-12 w-12 overflow-hidden rounded-xl border border-white/25 bg-[#F4FAFF] shadow-glow-sm">
+            <Image src="/brand/azmin-mark-v2.png" alt="AZMIN logo" fill priority sizes="48px" className="object-contain p-0.5" />
           </span>
-          <span className="font-display text-[18px] font-bold tracking-tight">Social Media Content Manager</span>
+          <span className="font-display text-[18px] font-bold tracking-tight">AZMIN Digital OS</span>
         </div>
 
         <div className="relative max-w-[26rem]">
           <h2 className="font-display text-[30px] font-bold leading-[1.15] tracking-tight">
-            Create, tag, and ship content — from one chat.
+            Run your digital business from one intelligent workspace.
           </h2>
           <p className="mt-4 text-[14px] leading-relaxed text-white/80">
             A chat-first studio for your whole team. Generate drafts, save and tag them by
@@ -35,9 +36,9 @@ export function AuthCard({
           </p>
           <ul className="mt-8 space-y-3.5">
             {[
-              { icon: "home" as const, text: "Generate blog posts, thumbnails & scripts in chat" },
-              { icon: "images" as const, text: "Save & tag by creator, type, and platform" },
-              { icon: "approved" as const, text: "Review, approve, and schedule — together" },
+              { icon: "home" as const, text: "Create professional content with AI" },
+              { icon: "images" as const, text: "Organize work by company and service" },
+              { icon: "approved" as const, text: "Review, approve and automate safely" },
             ].map((f) => (
               <li key={f.text} className="flex items-center gap-3 text-[13.5px] text-white/90">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-white/15 backdrop-blur-sm">
@@ -52,14 +53,14 @@ export function AuthCard({
         <div className="relative space-y-0.5 text-[12px] text-white/60">
           <div>
             Built by{" "}
-            <span className="font-semibold text-white/85">Msquare Automation Solutions</span>
+            <span className="font-semibold text-white/85">AZMIN Digital</span>
           </div>
           <div>
-            <a href="mailto:admin@msquare.pro" className="hover:text-white/90">admin@msquare.pro</a>
+            <a href="mailto:azminpulse@gmail.com" className="hover:text-white/90">azminpulse@gmail.com</a>
             {" · "}
             <a href="tel:+917736507130" className="hover:text-white/90">+91 77365 07130</a>
           </div>
-          <div className="text-white/45">© 2026 · Social Media Content Manager</div>
+          <div className="text-white/45">© 2026 · AZMIN Digital OS</div>
         </div>
       </aside>
 
@@ -71,10 +72,10 @@ export function AuthCard({
         <div className="relative w-[400px] max-w-full animate-fade-up">
           {/* Compact brand mark for mobile (the panel is hidden there) */}
           <div className="mb-5 flex items-center justify-center gap-2 md:hidden">
-            <span className="grid h-9 w-9 place-items-center rounded-[12px] bg-brand-teal text-white shadow-glow-sm">
-              ◆
+            <span className="relative h-10 w-10 overflow-hidden rounded-xl border border-line bg-[#F4FAFF] shadow-glow-sm">
+              <Image src="/brand/azmin-mark-v2.png" alt="AZMIN logo" fill priority sizes="40px" className="object-contain p-0.5" />
             </span>
-            <span className="font-display text-[16px] font-bold">Social Media Content Manager</span>
+            <span className="font-display text-[16px] font-bold">AZMIN Digital OS</span>
           </div>
 
           <div className="rounded-xl2 border border-line/70 bg-card p-8 shadow-card">

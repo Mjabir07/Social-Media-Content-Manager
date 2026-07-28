@@ -51,10 +51,10 @@ function coverSvg(title: string, label: string, c1: string, c2: string): string 
     <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
   </linearGradient></defs>
   <rect width="${THUMB_W}" height="${THUMB_H}" fill="url(#g)"/>
-  <text x="32" y="40" fill="#ffffff" opacity="0.8" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.5" text-transform="uppercase">${escapeHtml(
+  <text x="32" y="40" fill="#ffffff" opacity="0.8" font-family="Source Sans 3, Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.5" text-transform="uppercase">${escapeHtml(
     label.toUpperCase(),
   )}</text>
-  <text fill="#ffffff" font-family="Sora, Arial, sans-serif" font-size="24" font-weight="700">${tspans}</text>
+  <text fill="#ffffff" font-family="Manrope, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700">${tspans}</text>
 </svg>`;
 }
 

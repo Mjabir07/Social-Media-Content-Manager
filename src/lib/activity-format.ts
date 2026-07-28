@@ -2,7 +2,7 @@
 // + the description formatter live here so both the server (logActivity, data
 // layer) and the client ActivityPanel can use them.
 
-export type ActivityCategory = "content" | "account" | "creator" | "platform";
+export type ActivityCategory = "content" | "account" | "creator" | "platform" | "business";
 
 type ActionDef = { category: ActivityCategory; verb: string };
 
@@ -32,6 +32,12 @@ export const ACTIONS = {
   "account.deleted": { category: "account", verb: "deleted account" },
   "account.password_reset": { category: "account", verb: "reset the password of" },
   "account.password_changed": { category: "account", verb: "changed their password" },
+  "company.created": { category: "business", verb: "created company" },
+  "company.updated": { category: "business", verb: "updated company" },
+  "company.brain_updated": { category: "business", verb: "updated Company Brain for" },
+  "integration.credential_saved": { category: "business", verb: "saved API credential for" },
+  "integration.credential_status_changed": { category: "business", verb: "changed API access for" },
+  "integration.credential_tested": { category: "business", verb: "tested API connection for" },
 } as const satisfies Record<string, ActionDef>;
 
 export type ActionKey = keyof typeof ACTIONS;
@@ -41,6 +47,7 @@ export const ACTIVITY_CATEGORIES: { key: ActivityCategory; label: string }[] = [
   { key: "account", label: "Accounts" },
   { key: "creator", label: "Creators" },
   { key: "platform", label: "Platforms" },
+  { key: "business", label: "Business" },
 ];
 
 /** Pure: the predicate shown after the actor's name (e.g. `saved a blog post “X”`). */

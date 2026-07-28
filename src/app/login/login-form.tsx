@@ -33,7 +33,7 @@ export function LoginForm({ initialError = false }: { initialError?: boolean }) 
       if (session?.user?.id) break;
       await new Promise((r) => setTimeout(r, 120));
     }
-    window.location.assign("/");
+    window.location.assign("/azmin");
   }
 
   return (

@@ -368,6 +368,23 @@ export type DashboardData = {
   topCreators: { name: string; avatarColor: string; assetCount: number }[];
 };
 
+export function emptyDashboardData(): DashboardData {
+  return {
+    totalAssets: 0,
+    statusCounts: { PENDING: 0, REWORK: 0, APPROVED: 0, PUBLISHED: 0 },
+    scheduledThisMonth: 0,
+    scheduledAhead: 0,
+    byType: LIBRARY_VIEWS.map((view) => ({
+      key: view.key,
+      label: view.label,
+      count: 0,
+    })),
+    perPlatform: [],
+    upcoming: [],
+    topCreators: [],
+  };
+}
+
 function typeBreakdown(assets: { type: string }[]): TypeSlice[] {
   return LIBRARY_VIEWS.map((v) => ({
     key: v.key,

@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,8 +11,8 @@
   --c-bg: 244 246 249;
   --c-card: 255 255 255;
   --c-wash: 20 31 46; /* used at low opacity for hovers/insets */
-  --c-teal-dark: 11 125 113;
-  --c-teal-soft: 220 243 240;
+  --c-teal-dark: 7 88 201;
+  --c-teal-soft: 225 242 255;
   --c-violet-soft: 239 230 251;
   --scroll-thumb: rgba(20, 31, 46, 0.14);
   --scroll-thumb-hover: rgba(20, 31, 46, 0.26);
@@ -27,8 +25,8 @@
   --c-bg: 15 20 28; /* app background */
   --c-card: 24 31 42; /* raised surfaces */
   --c-wash: 235 240 246; /* light wash for hovers on dark */
-  --c-teal-dark: 84 220 205; /* light teal for text on teal-soft */
-  --c-teal-soft: 18 52 50; /* dark teal-tinted fill */
+  --c-teal-dark: 112 228 255; /* light teal for text on teal-soft */
+  --c-teal-soft: 5 38 78; /* dark teal-tinted fill */
   --c-violet-soft: 46 38 66;
   --scroll-thumb: rgba(232, 237, 243, 0.16);
   --scroll-thumb-hover: rgba(232, 237, 243, 0.3);
@@ -41,21 +39,23 @@ body {
 
 body {
   @apply bg-bg text-ink font-sans;
-  font-size: 14px;
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  line-height: 1.5;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   /* Subtle depth: faint teal + violet light sources over the base bg. */
   background-image:
-    radial-gradient(60rem 60rem at 12% -10%, rgba(14, 159, 143, 0.08), transparent 60%),
+    radial-gradient(60rem 60rem at 12% -10%, rgba(8, 124, 250, 0.08), transparent 60%),
     radial-gradient(50rem 50rem at 100% 0%, rgba(122, 79, 201, 0.06), transparent 55%),
-    radial-gradient(40rem 40rem at 50% 120%, rgba(14, 159, 143, 0.05), transparent 60%);
+    radial-gradient(40rem 40rem at 50% 120%, rgba(8, 124, 250, 0.05), transparent 60%);
   background-attachment: fixed;
 }
 
 @layer base {
   ::selection {
-    background: rgba(14, 159, 143, 0.22);
+    background: rgba(8, 124, 250, 0.22);
   }
 
   h1,
@@ -68,7 +68,7 @@ body {
   /* Consistent, subtle focus ring for keyboard users. */
   *:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(14, 159, 143, 0.28);
+    box-shadow: 0 0 0 3px rgba(8, 124, 250, 0.28);
     border-radius: 8px;
   }
 
@@ -139,4 +139,35 @@ body {
 }
 *::-webkit-scrollbar-thumb:hover {
   background-color: var(--scroll-thumb-hover);
+}
+
+/* AZMIN readability floor: keep operational pages legible on common laptop
+   displays without changing the compact density of the legacy media library. */
+[data-azmin-ui] {
+  font-size: 15px;
+  color: #061a33;
+}
+[data-azmin-ui] .text-\[10px\],
+[data-azmin-ui] .text-\[11px\],
+[data-azmin-ui] .text-xs {
+  font-size: 13px !important;
+  line-height: 1.25rem !important;
+}
+[data-azmin-ui] .text-sm {
+  font-size: 15px !important;
+  line-height: 1.5rem !important;
+}
+[data-azmin-ui] input,
+[data-azmin-ui] textarea,
+[data-azmin-ui] select {
+  font-size: 15px;
+  line-height: 1.5;
+}
+[data-azmin-ui] input::placeholder,
+[data-azmin-ui] textarea::placeholder {
+  color: #5d748a;
+  opacity: 1;
+}
+[data-azmin-ui] button:disabled {
+  opacity: 0.58;
 }
