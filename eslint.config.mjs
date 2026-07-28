@@ -7,12 +7,14 @@ const eslintConfig = [
   {
     ignores: [
       ".next/**",
+      ".magicpath/**",
       "node_modules/**",
       "public/**",
       "prisma/**",
       "e2e/**",
       "playwright.config.ts",
       "eslint.config.mjs",
+      "src/components/magicpath/**",
     ],
   },
   ...coreWebVitals,

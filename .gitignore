@@ -33,5 +33,10 @@ prisma/dev.db-journal
 # OS
 .DS_Store
 
+# MagicPath design-tool cache and preview logs (scratch, not source)
+.magicpath/
+.azmin-preview.log
+.azmin-preview-error.log
+
 # Isolated E2E test database (never commit real connection strings)
 .env.test

@@ -23,7 +23,7 @@ const config: Config = {
         // real token so it can lighten instead of darken in dark mode.
         wash: "rgb(var(--c-wash) / <alpha-value>)",
         teal: {
-          DEFAULT: "#0e9f8f",
+          DEFAULT: "#087CFA",
           dark: "rgb(var(--c-teal-dark) / <alpha-value>)",
           soft: "rgb(var(--c-teal-soft) / <alpha-value>)",
         },
@@ -38,17 +38,17 @@ const config: Config = {
         soft: "0 1px 2px rgba(20,31,46,.04), 0 4px 14px rgba(20,31,46,.05)",
         card: "0 1px 2px rgba(20,31,46,.04), 0 10px 30px rgba(20,31,46,.07)",
         lift: "0 2px 6px rgba(20,31,46,.06), 0 18px 40px rgba(20,31,46,.13)",
-        glow: "0 6px 18px rgba(14,159,143,.30), inset 0 1px 0 rgba(255,255,255,.18)",
-        "glow-sm": "0 3px 10px rgba(14,159,143,.28)",
+        glow: "0 6px 18px rgba(8,124,250,.30), inset 0 1px 0 rgba(255,255,255,.18)",
+        "glow-sm": "0 3px 10px rgba(8,124,250,.28)",
         ring: "0 0 0 1px rgba(20,31,46,.05)",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Sora", "sans-serif"],
+        sans: ["var(--font-body)", "Segoe UI", "Arial", "sans-serif"],
+        display: ["var(--font-display)", "Segoe UI", "Arial", "sans-serif"],
       },
       backgroundImage: {
-        "brand-teal": "linear-gradient(135deg, #12b3a1 0%, #0b7d71 100%)",
-        "brand-teal-strong": "linear-gradient(135deg, #16c2af 0%, #0a6f88 100%)",
+        "brand-teal": "linear-gradient(135deg, #22D3EE 0%, #087CFA 100%)",
+        "brand-teal-strong": "linear-gradient(135deg, #22D3EE 0%, #0758C9 100%)",
       },
       transitionTimingFunction: {
         premium: "cubic-bezier(.22,.61,.36,1)",

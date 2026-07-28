@@ -19,25 +19,25 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
+  id                String    @id @default(cuid())
+  email             String    @unique
   name              String
   passwordHash      String
-  avatarColor       String   @default("#0e9f8f")
-  createdAt         DateTime @default(now())
+  avatarColor       String    @default("#0e9f8f")
+  createdAt         DateTime  @default(now())
   // Bumped on password reset/change to invalidate older JWT sessions.
-  passwordChangedAt DateTime @default(now())
+  passwordChangedAt DateTime  @default(now())
   // Set when an admin deactivates the account — login + active sessions blocked.
   disabledAt        DateTime?
 
-  memberships    Membership[]
-  person         Person[]
-  createdAssets  MediaAsset[]        @relation("AssetCreatedBy")
-  assetVersions  AssetVersion[]
-  chatSessions   ChatSession[]
-  skillUpdates   Skill[]
-  resetTokens    PasswordResetToken[]
-  notifications  Notification[]
+  memberships   Membership[]
+  person        Person[]
+  createdAssets MediaAsset[]         @relation("AssetCreatedBy")
+  assetVersions AssetVersion[]
+  chatSessions  ChatSession[]
+  skillUpdates  Skill[]
+  resetTokens   PasswordResetToken[]
+  notifications Notification[]
 }
 
 model Workspace {
@@ -45,15 +45,98 @@ model Workspace {
   name      String
   createdAt DateTime @default(now())
 
-  memberships Membership[]
-  skills      Skill[]
-  people      Person[]
-  channels    SocialChannel[]
-  assets      MediaAsset[]
-  sessions    ChatSession[]
-  invites     Invite[]
-  activity    ActivityLog[]
-  notifications Notification[]
+  memberships         Membership[]
+  skills              Skill[]
+  people              Person[]
+  channels            SocialChannel[]
+  assets              MediaAsset[]
+  sessions            ChatSession[]
+  invites             Invite[]
+  activity            ActivityLog[]
+  notifications       Notification[]
+  companies           Company[]
+  providerCredentials ProviderCredential[]
+}
+
+// Workspace-scoped API credential. The raw secret is encrypted by the app with
+// an environment-held master key and is never returned to the browser.
+model ProviderCredential {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  provider        String
+  encryptedValue  String
+  iv              String
+  authTag         String
+  keyVersion      Int       @default(1)
+  maskedValue     String
+  status          String    @default("ACTIVE")
+  lastTestedAt    DateTime?
+  lastTestStatus  String?
+  lastTestMessage String?
+  createdById     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider])
+  @@index([workspaceId, status])
+}
+
+// A separately managed business identity inside one tenant/workspace.
+// relationshipType: OWN_BRAND | CLIENT | PARTNER | JOINT_VENTURE
+// status: ACTIVE | PAUSED | ARCHIVED
+model Company {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  name             String
+  slug             String
+  relationshipType String
+  industry         String?
+  website          String?
+  description      String?
+  status           String   @default("ACTIVE")
+  isHeadquarters   Boolean  @default(false)
+  primaryColor     String   @default("#087CFA")
+  accentColor      String   @default("#22D3EE")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  brandProfile BrandProfile?
+  brain        CompanyBrain?
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, status])
+}
+
+model BrandProfile {
+  id              String   @id @default(cuid())
+  companyId       String   @unique
+  tagline         String?
+  brandVoice      String?
+  targetAudiences String   @default("[]")
+  offerings       String   @default("[]")
+  differentiators String   @default("[]")
+  contentRules    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model CompanyBrain {
+  id              String   @id @default(cuid())
+  companyId       String   @unique
+  companyFacts    String?
+  salesGuidance   String?
+  contentGuidance String?
+  aiInstructions  String?
+  knowledgeStatus String   @default("EMPTY")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 // Immutable audit trail of who did what. Actor fields are denormalized so an
@@ -129,14 +212,14 @@ model Skill {
 
 // A creator/company person. May link to a login User, or stand alone.
 model Person {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   name        String
   email       String?
   label       String?
   userId      String?
-  avatarColor String   @default("#0e9f8f")
-  createdAt   DateTime @default(now())
+  avatarColor String    @default("#0e9f8f")
+  createdAt   DateTime  @default(now())
   // Soft-delete: archived creators disappear from pickers/filters but stay
   // referenced by past assets (attribution history is preserved).
   deletedAt   DateTime?

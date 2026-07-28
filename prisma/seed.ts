@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 const DEV_PASSWORD = "msquare2026";
 
 async function main() {
-  console.log("🌱 Seeding MediaChat…");
+  console.log("🌱 Seeding AZMIN Digital OS…");
 
   // Clean slate (order respects FKs).
   await prisma.assetChannel.deleteMany();
@@ -32,7 +32,7 @@ async function main() {
 
   // ---- Workspace ----
   const workspace = await prisma.workspace.create({
-    data: { name: "MSquare Studio" },
+    data: { name: "AZMIN Digital" },
   });
 
   // ---- Primary admin account (OWNER) ----
