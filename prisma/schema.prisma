@@ -60,6 +60,8 @@ model Workspace {
   providerCredentials ProviderCredential[]
   agentProfiles       AgentProfile[]
   services            Service[]
+  connections         ChannelConnection[]
+  automations         Automation[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -106,11 +108,13 @@ model Company {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   brandProfile BrandProfile?
   brain        CompanyBrain?
   agents       AgentProfile[]
   services     Service[]
+  connections  ChannelConnection[]
+  automations  Automation[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -198,6 +202,75 @@ model Service {
 
   @@index([workspaceId, status])
   @@index([workspaceId, companyId])
+}
+
+// An external channel the workspace can send through (Meta, WhatsApp, Email,
+// etc.). Secrets are encrypted with the app master key like the API vault and
+// never returned raw. `meta` holds non-secret display info (page name, from
+// address). channel: META_PAGE | INSTAGRAM | WHATSAPP | EMAIL | TELEGRAM | WEBHOOK
+model ChannelConnection {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  companyId       String?
+  channel         String
+  displayName     String
+  status          String   @default("CONNECTED") // CONNECTED | DISABLED | ERROR
+  encryptedConfig String?
+  iv              String?
+  authTag         String?
+  keyVersion      Int      @default(1)
+  meta            String? // non-secret JSON for display
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company     Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  automations Automation[]
+
+  @@index([workspaceId, companyId])
+}
+
+// A simple automation recipe: when `trigger` happens, run `action` (often
+// through a ChannelConnection) using `template`. Kept deliberately flat so the
+// UI can present it as one plain-English sentence a non-technical user edits.
+// trigger: LEAD_CREATED | CONTENT_APPROVED | CONTENT_PUBLISHED | MANUAL
+// action:  SEND_WHATSAPP | SEND_EMAIL | POST_META | NOTIFY | WEBHOOK
+model Automation {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  companyId    String?
+  name         String
+  trigger      String
+  action       String
+  connectionId String?
+  template     String? // message body with {{placeholders}}
+  config       String? // JSON extras (subject, url…)
+  enabled      Boolean  @default(true)
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace  Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company    Company?           @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  connection ChannelConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  runs       AutomationRun[]
+
+  @@index([workspaceId, trigger, enabled])
+}
+
+// One execution record for an automation. status: SUCCESS | FAILED | SIMULATED | SKIPPED
+model AutomationRun {
+  id           String   @id @default(cuid())
+  automationId String
+  workspaceId  String
+  status       String
+  detail       String?
+  createdAt    DateTime @default(now())
+
+  automation Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId, createdAt])
 }
 
 // Immutable audit trail of who did what. Actor fields are denormalized so an
