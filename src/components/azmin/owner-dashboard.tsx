@@ -47,7 +47,7 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
             <nav className="mt-4 space-y-1" aria-label="AZMIN navigation">
               <NavItem icon="home" label="Command center" active />
               <NavItem icon="companies" label="Companies" badge="Live" href="/azmin/companies" />
-              <NavItem icon="sales" label="Sales & partners" badge="Soon" />
+              <NavItem icon="sales" label="Leads & sales" href="/azmin/leads" />
               <NavItem icon="projects" label="Projects" badge="Soon" />
               <NavItem icon="services" label="Services" href="/azmin/services" />
               <NavItem icon="spark" label="Automations" href="/azmin/automations" />

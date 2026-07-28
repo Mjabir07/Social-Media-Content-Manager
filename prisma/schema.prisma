@@ -62,6 +62,7 @@ model Workspace {
   services            Service[]
   connections         ChannelConnection[]
   automations         Automation[]
+  leads               Lead[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -115,6 +116,7 @@ model Company {
   services     Service[]
   connections  ChannelConnection[]
   automations  Automation[]
+  leads        Lead[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -199,6 +201,7 @@ model Service {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   createdBy User?     @relation("ServiceCreatedBy", fields: [createdById], references: [id])
+  leads     Lead[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, companyId])
@@ -257,6 +260,36 @@ model Automation {
   runs       AutomationRun[]
 
   @@index([workspaceId, trigger, enabled])
+}
+
+// Phase 2 — a sales lead moving through the pipeline. Creating a lead fires the
+// LEAD_CREATED automation trigger. `score`/`aiSummary` hold the AI/heuristic
+// qualification. stage: NEW | QUALIFIED | PROPOSAL | WON | LOST
+model Lead {
+  id          String   @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  serviceId   String?
+  name        String
+  email       String?
+  phone       String?
+  source      String?
+  stage       String   @default("NEW")
+  valueCents  Int?
+  currency    String   @default("AED")
+  notes       String?
+  score       Int?
+  aiSummary   String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  service   Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, stage])
+  @@index([workspaceId, companyId])
 }
 
 // One execution record for an automation. status: SUCCESS | FAILED | SIMULATED | SKIPPED
