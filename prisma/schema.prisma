@@ -66,6 +66,7 @@ model Workspace {
   partnerships        Partnership[]
   commissionPayments  CommissionPayment[]
   socialPosts         SocialPost[]
+  conversations       Conversation[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -112,16 +113,17 @@ model Company {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  brandProfile BrandProfile?
-  brain        CompanyBrain?
-  agents       AgentProfile[]
-  services     Service[]
-  connections  ChannelConnection[]
-  automations  Automation[]
-  leads        Lead[]
-  partnerships Partnership[]       @relation("PartnerOf")
-  socialPosts  SocialPost[]
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  brandProfile  BrandProfile?
+  brain         CompanyBrain?
+  agents        AgentProfile[]
+  services      Service[]
+  connections   ChannelConnection[]
+  automations   Automation[]
+  leads         Lead[]
+  partnerships  Partnership[]       @relation("PartnerOf")
+  socialPosts   SocialPost[]
+  conversations Conversation[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -340,6 +342,49 @@ model PostTarget {
   connection ChannelConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
 
   @@index([postId])
+}
+
+// Unified inbox — one Conversation per contact per channel. Incoming messages
+// (WhatsApp / Messenger / Instagram DM) arrive via the Meta webhook; replies go
+// out through the channel adapter. channel: WHATSAPP | MESSENGER | INSTAGRAM
+// status: OPEN | CLOSED
+model Conversation {
+  id                 String   @id @default(cuid())
+  workspaceId        String
+  companyId          String?
+  channel            String
+  externalId         String // sender/thread id from the provider
+  contactName        String?
+  contactHandle      String? // phone / PSID / IG id
+  status             String   @default("OPEN")
+  unread             Int      @default(0)
+  lastMessageAt      DateTime @default(now())
+  lastMessagePreview String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  messages  Message[]
+
+  @@unique([workspaceId, channel, externalId])
+  @@index([workspaceId, status, lastMessageAt])
+}
+
+// One message in a Conversation. direction: IN | OUT. status (OUT only): SENT | FAILED
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  workspaceId    String
+  direction      String
+  body           String
+  externalId     String?
+  status         String?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
 
 // A commission agreement with a partner company. Percentage rate is stored in

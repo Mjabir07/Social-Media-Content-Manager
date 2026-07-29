@@ -30,6 +30,8 @@ type EnvStatus = {
   authSecret: boolean;
   authUrlSet: boolean;
   authUrlIsLocalhost: boolean;
+  metaVerifyToken: boolean;
+  metaAppSecret: boolean;
 };
 
 type VaultResponse = {
@@ -329,6 +331,8 @@ function EnvPanel({ env }: { env: EnvStatus }) {
     { ok: env.database, label: "Database", hint: "DATABASE_URL — your Neon connection" },
     { ok: env.authSecret, label: "Login secret", hint: "NEXTAUTH_SECRET — keeps sign-in sessions safe" },
     { ok: env.authUrlSet && !env.authUrlIsLocalhost, label: "App URL", hint: env.authUrlIsLocalhost ? "NEXTAUTH_URL still points to localhost — set it to your live Vercel URL" : "NEXTAUTH_URL — your public address" },
+    { ok: env.metaVerifyToken, label: "Meta verify token", hint: "META_VERIFY_TOKEN — any secret word; paste the same one in the Meta webhook setup" },
+    { ok: env.metaAppSecret, label: "Meta app secret", hint: "META_APP_SECRET — verifies incoming Meta webhooks are genuine" },
   ];
   const missing = items.filter((i) => !i.ok).length;
   return (
