@@ -102,3 +102,23 @@ export async function publishPost(workspaceId: string, id: string) {
   await prisma.socialPost.update({ where: { id: post.id }, data: { status: rolled } });
   return { status: rolled, targets: statuses };
 }
+
+// Scheduled posts whose time has arrived (across all workspaces — for the cron).
+export async function getDuePosts(now: Date = new Date()) {
+  return prisma.socialPost.findMany({
+    where: { status: "SCHEDULED", scheduledAt: { lte: now } },
+    select: { id: true, workspaceId: true },
+    take: 100,
+  });
+}
+
+// Publish every due scheduled post. Called by the cron endpoint.
+export async function runDuePosts(now: Date = new Date()) {
+  const due = await getDuePosts(now);
+  const results: { id: string; status: string | null }[] = [];
+  for (const p of due) {
+    const r = await publishPost(p.workspaceId, p.id);
+    results.push({ id: p.id, status: r?.status ?? null });
+  }
+  return { ran: due.length, results };
+}

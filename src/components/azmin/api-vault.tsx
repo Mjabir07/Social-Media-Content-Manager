@@ -32,6 +32,7 @@ type EnvStatus = {
   authUrlIsLocalhost: boolean;
   metaVerifyToken: boolean;
   metaAppSecret: boolean;
+  cronSecret: boolean;
 };
 
 type VaultResponse = {
@@ -333,6 +334,7 @@ function EnvPanel({ env }: { env: EnvStatus }) {
     { ok: env.authUrlSet && !env.authUrlIsLocalhost, label: "App URL", hint: env.authUrlIsLocalhost ? "NEXTAUTH_URL still points to localhost — set it to your live Vercel URL" : "NEXTAUTH_URL — your public address" },
     { ok: env.metaVerifyToken, label: "Meta verify token", hint: "META_VERIFY_TOKEN — any secret word; paste the same one in the Meta webhook setup" },
     { ok: env.metaAppSecret, label: "Meta app secret", hint: "META_APP_SECRET — verifies incoming Meta webhooks are genuine" },
+    { ok: env.cronSecret, label: "Cron secret", hint: "CRON_SECRET — protects the auto-publish scheduler; add the same value in Vercel Cron" },
   ];
   const missing = items.filter((i) => !i.ok).length;
   return (

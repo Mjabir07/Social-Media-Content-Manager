@@ -77,6 +77,7 @@ export async function GET() {
     authUrlIsLocalhost: nextAuthUrl.includes("localhost") || nextAuthUrl.includes("127.0.0.1"),
     metaVerifyToken: Boolean(process.env.META_VERIFY_TOKEN),
     metaAppSecret: Boolean(process.env.META_APP_SECRET),
+    cronSecret: Boolean(process.env.CRON_SECRET),
   };
   return Response.json({
     vaultReady: isCredentialVaultReady(),

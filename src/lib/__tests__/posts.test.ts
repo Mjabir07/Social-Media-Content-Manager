@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/db", () => ({ prisma: mocks }));
 
-import { channelPostAction, getPosts, publishPost, rollupStatus } from "@/lib/posts";
+import { channelPostAction, getPosts, publishPost, rollupStatus, runDuePosts } from "@/lib/posts";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -70,5 +70,20 @@ describe("scoping", () => {
     mocks.socialPost.findMany.mockResolvedValue([]);
     await getPosts("tenant-a");
     expect(mocks.socialPost.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { workspaceId: "tenant-a" } }));
+  });
+});
+
+describe("scheduled auto-runner", () => {
+  it("publishes each scheduled post whose time has arrived", async () => {
+    mocks.socialPost.findMany.mockResolvedValue([{ id: "p1", workspaceId: "w1" }]);
+    mocks.socialPost.findFirst.mockResolvedValue({ id: "p1", content: "hi", targets: [{ id: "t1", channel: "WEBHOOK", connection: null }] });
+    mocks.postTarget.update.mockResolvedValue({});
+    mocks.socialPost.update.mockResolvedValue({});
+    const r = await runDuePosts(new Date());
+    expect(r.ran).toBe(1);
+    expect(mocks.socialPost.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: "SCHEDULED", scheduledAt: expect.objectContaining({ lte: expect.any(Date) }) }),
+    }));
+    expect(mocks.socialPost.update).toHaveBeenCalled(); // post status rolled up after publish
   });
 });
