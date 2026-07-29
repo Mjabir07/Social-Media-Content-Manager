@@ -40,3 +40,6 @@ prisma/dev.db-journal
 
 # Isolated E2E test database (never commit real connection strings)
 .env.test
+
+# MagicPath design-tool scratch (unused, not imported)
+src/components/magicpath/
