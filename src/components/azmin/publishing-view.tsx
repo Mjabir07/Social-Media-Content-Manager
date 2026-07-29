@@ -8,6 +8,9 @@ import { Megaphone, Send, Sparkles, Trash2 } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { channelMeta, type Channel } from "@/lib/automations-catalog";
 import { postStatusMeta, type PostStatus, type TargetStatus } from "@/lib/posts-catalog";
+import { specsForPlatforms } from "@/lib/media-specs";
+
+const CHANNEL_TO_PLATFORM: Record<string, string> = { INSTAGRAM: "INSTAGRAM", META_PAGE: "FACEBOOK", LINKEDIN: "LINKEDIN", YOUTUBE: "YOUTUBE" };
 
 type Connection = { id: string; channel: Channel; displayName: string; status: string };
 type Target = { id: string; channel: string; status: TargetStatus; detail: string | null };
@@ -107,6 +110,23 @@ export function PublishingView({ posts, connections, companies, canManage, userN
                 </div>
               )}
             </div>
+
+            {(() => {
+              const pickedPlatforms = [...new Set(connections.filter((c) => picked.includes(c.id)).map((c) => CHANNEL_TO_PLATFORM[c.channel]).filter(Boolean))];
+              const specs = specsForPlatforms(pickedPlatforms);
+              if (specs.length === 0) return null;
+              return (
+                <div className="mt-4 rounded-xl border border-[#B9E9FA] bg-[#ECFAFF] px-3.5 py-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#17577A]">Recommended sizes for these platforms</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {specs.map((s) => (
+                      <span key={`${s.platform}-${s.format}`} className="rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-[#0758C9]">{s.label} · {s.width}×{s.height} <span className="text-[#7890A6]">({s.aspect})</span></span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] leading-4 text-[#47708A]">Media is cropped + downscaled to each size — never upscaled, so no quality loss. Video resizing needs a media service (next step).</p>
+                </div>
+              );
+            })()}
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {companies.length > 0 && <label className="block text-xs font-bold text-[#476987]">Company (optional)<select value={companyId} onChange={(e) => setCompanyId(e.target.value)} className={inputClass}><option value="">— none —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
