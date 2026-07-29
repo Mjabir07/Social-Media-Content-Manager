@@ -96,14 +96,22 @@ export async function dispatchTrigger(input: {
     include: { connection: true },
   });
 
+  const vars = input.variables ?? {};
   const runs: { automationId: string; status: string; detail: string }[] = [];
   for (const a of automations) {
-    const message = renderTemplate(a.template ?? "", input.variables ?? {});
+    const action = a.action as Action;
+    const message = renderTemplate(a.template ?? "", vars);
+    // Messaging channels need a recipient — pull it from the event variables.
+    const recipient =
+      action === "SEND_WHATSAPP" ? (vars.phone != null ? String(vars.phone) : undefined)
+      : action === "SEND_EMAIL" ? (vars.email != null ? String(vars.email) : undefined)
+      : undefined;
     const result = await sendViaChannel({
-      action: a.action as Action,
-      channel: actionMeta[a.action as Action]?.channel ?? null,
+      action,
+      channel: actionMeta[action]?.channel ?? null,
       connection: a.connection,
       message,
+      recipient,
     });
     await prisma.automationRun.create({
       data: { automationId: a.id, workspaceId: input.workspaceId, status: result.status, detail: result.detail },

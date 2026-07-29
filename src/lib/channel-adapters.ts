@@ -3,14 +3,14 @@ import { decryptCredential, isCredentialVaultReady } from "@/lib/integrations/cr
 import type { Action, Channel } from "@/lib/automations-catalog";
 
 /**
- * The single seam where automations reach the outside world. Until live API
- * credentials and platform review exist for Meta / WhatsApp / Email, real sends
- * are SIMULATED (recorded, never transmitted). Wire real calls per branch in
- * `sendViaChannel` — the rest of the system already treats this as the boundary.
+ * The single seam where automations and publishing reach the outside world.
+ * Real sends run only when a connection has a decryptable secret; otherwise the
+ * result is safely SIMULATED (recorded, never transmitted), so the app is fully
+ * usable with no external keys. Only official provider APIs are used.
  */
 
 export type SendStatus = "SUCCESS" | "FAILED" | "SIMULATED" | "SKIPPED";
-export type SendResult = { status: SendStatus; detail: string };
+export type SendResult = { status: SendStatus; detail: string; externalId?: string };
 
 export type ConnectionRow = {
   channel: string;
@@ -21,6 +21,7 @@ export type ConnectionRow = {
   authTag: string | null;
   keyVersion: number;
   workspaceId: string;
+  meta?: string | null;
 } | null;
 
 export function connectionProviderTag(channel: string) {
@@ -48,19 +49,37 @@ function truncate(value: string, max = 140) {
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
+// Split "a:rest" on the FIRST colon (tokens contain their own dots/colons).
+function splitPair(secret: string): [string, string] {
+  const i = secret.indexOf(":");
+  return i === -1 ? [secret, ""] : [secret.slice(0, i), secret.slice(i + 1)];
+}
+
+function metaFrom(conn: NonNullable<ConnectionRow>): string | null {
+  if (!conn.meta) return null;
+  try {
+    const parsed = JSON.parse(conn.meta) as { from?: string };
+    return parsed.from ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const GRAPH = "https://graph.facebook.com/v21.0";
+
 export async function sendViaChannel(input: {
   action: Action;
   channel: Channel | null;
   connection: ConnectionRow;
   message: string;
+  recipient?: string; // phone (WhatsApp) or email (Email) for messaging channels
 }): Promise<SendResult> {
-  const { action, channel, connection, message } = input;
+  const { action, channel, connection, message, recipient } = input;
 
   // In-app notification needs no external channel.
   if (action === "NOTIFY") {
     return { status: "SUCCESS", detail: `Team notified: ${truncate(message)}` };
   }
-
   if (!connection || connection.status !== "CONNECTED") {
     return { status: "SKIPPED", detail: `No connected ${channel ?? "channel"} yet — connect one to send for real.` };
   }
@@ -70,8 +89,79 @@ export async function sendViaChannel(input: {
     return { status: "SIMULATED", detail: `Simulated ${channel} send (no live credentials configured): ${truncate(message)}` };
   }
 
-  // TODO(live): real API calls per channel — Meta Graph, WhatsApp Cloud API,
-  // SMTP/Resend, Telegram Bot API, or an HTTP POST for WEBHOOK. Until each is
-  // wired and reviewed, record a simulated send using the connected account.
-  return { status: "SIMULATED", detail: `Would send via ${connection.displayName}: ${truncate(message)}` };
+  try {
+    switch (channel) {
+      case "WEBHOOK":
+        return await sendWebhook(secret, message, recipient);
+      case "META_PAGE":
+        return await sendMetaPage(secret, message);
+      case "WHATSAPP":
+        return await sendWhatsApp(secret, message, recipient);
+      case "EMAIL":
+        return await sendEmail(secret, metaFrom(connection), message, recipient);
+      default:
+        // INSTAGRAM (needs media + 2-step) and any other channel: not wired yet.
+        return { status: "SIMULATED", detail: `Would send via ${connection.displayName}: ${truncate(message)}` };
+    }
+  } catch (error) {
+    return { status: "FAILED", detail: error instanceof Error ? error.message : "Send failed." };
+  }
+}
+
+// --- Real, official-API senders ---------------------------------------------
+
+// Webhook: POST the message JSON to the stored URL (Zapier / Make / your own).
+async function sendWebhook(url: string, message: string, recipient?: string): Promise<SendResult> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: message, recipient: recipient ?? null }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  return res.ok ? { status: "SUCCESS", detail: "Webhook delivered." } : { status: "FAILED", detail: `Webhook returned HTTP ${res.status}.` };
+}
+
+// Facebook Page feed post. secret = "pageId:pageAccessToken".
+async function sendMetaPage(secret: string, message: string): Promise<SendResult> {
+  const [pageId, token] = splitPair(secret);
+  if (!pageId || !token) return { status: "FAILED", detail: "Meta config must be pageId:token." };
+  const res = await fetch(`${GRAPH}/${encodeURIComponent(pageId)}/feed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, access_token: token }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const data = (await res.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
+  if (res.ok && data.id) return { status: "SUCCESS", detail: "Posted to Facebook Page.", externalId: data.id };
+  return { status: "FAILED", detail: data.error?.message ?? `Meta returned HTTP ${res.status}.` };
+}
+
+// WhatsApp Cloud API text message. secret = "phoneNumberId:token". Needs recipient.
+async function sendWhatsApp(secret: string, message: string, recipient?: string): Promise<SendResult> {
+  if (!recipient) return { status: "SKIPPED", detail: "No recipient phone for this WhatsApp send." };
+  const [phoneNumberId, token] = splitPair(secret);
+  if (!phoneNumberId || !token) return { status: "FAILED", detail: "WhatsApp config must be phoneNumberId:token." };
+  const res = await fetch(`${GRAPH}/${encodeURIComponent(phoneNumberId)}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ messaging_product: "whatsapp", to: recipient.replace(/[^\d]/g, ""), type: "text", text: { body: message } }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const data = (await res.json().catch(() => ({}))) as { messages?: { id?: string }[]; error?: { message?: string } };
+  if (res.ok && data.messages?.[0]?.id) return { status: "SUCCESS", detail: "WhatsApp message sent.", externalId: data.messages[0].id };
+  return { status: "FAILED", detail: data.error?.message ?? `WhatsApp returned HTTP ${res.status}.` };
+}
+
+// Email via Resend. secret = Resend API key ("re_..."). Needs recipient.
+async function sendEmail(secret: string, from: string | null, message: string, recipient?: string): Promise<SendResult> {
+  if (!recipient) return { status: "SKIPPED", detail: "No recipient email for this send." };
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+    body: JSON.stringify({ from: from || "onboarding@resend.dev", to: recipient, subject: message.split("\n")[0].slice(0, 80) || "Message", text: message }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const data = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
+  if (res.ok && data.id) return { status: "SUCCESS", detail: "Email sent.", externalId: data.id };
+  return { status: "FAILED", detail: data.message ?? `Email provider returned HTTP ${res.status}.` };
 }

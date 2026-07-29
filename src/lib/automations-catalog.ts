@@ -9,10 +9,10 @@ export const CHANNELS = ["META_PAGE", "INSTAGRAM", "WHATSAPP", "EMAIL", "TELEGRA
 export type Channel = (typeof CHANNELS)[number];
 
 export const channelMeta: Record<Channel, { label: string; blurb: string; secretLabel: string; placeholder: string }> = {
-  META_PAGE: { label: "Facebook Page", blurb: "Post updates to a Facebook Page.", secretLabel: "Page access token", placeholder: "EAAG..." },
+  META_PAGE: { label: "Facebook Page", blurb: "Post to a Facebook Page via the official Graph API. Enter the Page ID and a Page access token.", secretLabel: "Page ID : Page access token", placeholder: "123456789:EAAG..." },
   INSTAGRAM: { label: "Instagram", blurb: "Publish to a connected Instagram business account.", secretLabel: "Access token", placeholder: "IGQVJ..." },
-  WHATSAPP: { label: "WhatsApp", blurb: "Send WhatsApp messages via the Cloud API.", secretLabel: "Phone number ID : token", placeholder: "123456789:EAAG..." },
-  EMAIL: { label: "Email", blurb: "Send email from your address.", secretLabel: "SMTP or API key", placeholder: "smtp://user:pass@host:587 or re_..." },
+  WHATSAPP: { label: "WhatsApp", blurb: "Send WhatsApp messages via the official Cloud API. Enter the Phone Number ID and a permanent token.", secretLabel: "Phone number ID : token", placeholder: "123456789:EAAG..." },
+  EMAIL: { label: "Email", blurb: "Send email through Resend (free tier). Paste your Resend API key.", secretLabel: "Resend API key", placeholder: "re_..." },
   TELEGRAM: { label: "Telegram", blurb: "Send Telegram messages from a bot.", secretLabel: "Bot token : chat id", placeholder: "123:ABC... : -100..." },
   WEBHOOK: { label: "Webhook / Zapier", blurb: "Call any URL — connect Zapier, Make, or your own endpoint.", secretLabel: "Webhook URL", placeholder: "https://hooks.zapier.com/…" },
 };
