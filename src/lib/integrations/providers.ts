@@ -56,6 +56,14 @@ export const PROVIDERS = {
     placeholder: "apify_api_...",
     category: "Automation",
   },
+  CLOUDINARY: {
+    name: "Cloudinary",
+    description: "Auto-resize images and video to each platform's size on the fly — no quality loss.",
+    keyLabel: "Cloud name : API key : API secret",
+    placeholder: "mycloud:123456789:abcdef...",
+    credentialHint: "From your Cloudinary dashboard: paste Cloud name, a colon, API Key, a colon, then API Secret.",
+    category: "Media",
+  },
 } as const;
 
 export type ProviderId = keyof typeof PROVIDERS;

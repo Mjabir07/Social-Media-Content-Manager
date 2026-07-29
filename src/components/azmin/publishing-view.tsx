@@ -1,14 +1,16 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Cloudinary variant previews use dynamic external URLs; plain <img> is intentional here. */
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Megaphone, Send, Sparkles, Trash2 } from "lucide-react";
+import { ImagePlus, Megaphone, Send, Sparkles, Trash2 } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { channelMeta, type Channel } from "@/lib/automations-catalog";
 import { postStatusMeta, type PostStatus, type TargetStatus } from "@/lib/posts-catalog";
 import { specsForPlatforms } from "@/lib/media-specs";
+import { buildVariantUrl } from "@/lib/cloudinary-url";
 
 const CHANNEL_TO_PLATFORM: Record<string, string> = { INSTAGRAM: "INSTAGRAM", META_PAGE: "FACEBOOK", LINKEDIN: "LINKEDIN", YOUTUBE: "YOUTUBE" };
 
@@ -28,8 +30,25 @@ export function PublishingView({ posts, connections, companies, canManage, userN
   const [schedule, setSchedule] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [media, setMedia] = useState<{ publicId: string; cloudName: string; resourceType: "image" | "video"; url: string } | null>(null);
 
   function toggle(id: string) { setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])); }
+
+  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const resourceType: "image" | "video" = f.type.startsWith("video") ? "video" : "image";
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setBusy("upload"); setError("");
+      const res = await fetch("/api/media/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ file: reader.result, resourceType }) });
+      setBusy("");
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || "Upload failed."); return; }
+      const d = await res.json();
+      setMedia({ publicId: d.publicId, cloudName: d.cloudName, resourceType: d.resourceType, url: d.url });
+    };
+    reader.readAsDataURL(f);
+  }
 
   async function aiCaption() {
     if (!topic.trim()) { setError("Type a topic first, then generate."); return; }
@@ -46,11 +65,12 @@ export function PublishingView({ posts, connections, companies, canManage, userN
     setBusy(publish ? "pub" : "draft"); setError("");
     const res = await fetch("/api/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
       content, companyId: companyId || null, connectionIds: picked, scheduledAt: schedule ? new Date(schedule).toISOString() : null,
+      mediaPublicId: media?.publicId ?? null, mediaType: media?.resourceType ?? null, imageUrl: media?.url ?? null,
     }) });
     if (!res.ok) { setBusy(""); const d = await res.json().catch(() => ({})); setError(d.error || "Could not save the post."); return; }
     const post = await res.json();
     if (publish) await fetch(`/api/posts/${post.id}/publish`, { method: "POST" });
-    setBusy(""); setContent(""); setTopic(""); setSchedule("");
+    setBusy(""); setContent(""); setTopic(""); setSchedule(""); setMedia(null);
     router.refresh();
   }
 
@@ -92,6 +112,36 @@ export function PublishingView({ posts, connections, companies, canManage, userN
             <label className="mt-4 block text-xs font-bold text-[#476987]">Post content
               <textarea value={content} onChange={(e) => setContent(e.target.value)} className={inputClass + " min-h-32"} placeholder="What do you want to share?" />
             </label>
+
+            <div className="mt-4">
+              <p className="text-xs font-bold text-[#476987]">Media (auto-resized per platform)</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-[#AFC6DE] bg-[#F8FBFF] px-4 py-2.5 text-sm font-bold text-[#234B70] hover:border-[#087CFA]">
+                  <ImagePlus size={16} aria-hidden /> {busy === "upload" ? "Uploading…" : media ? "Replace media" : "Upload image / video"}
+                  <input type="file" accept="image/*,video/*" onChange={onPickFile} className="hidden" />
+                </label>
+                {media && <button type="button" onClick={() => setMedia(null)} className="text-xs font-bold text-[#A12C2C] hover:underline">Remove</button>}
+              </div>
+              {media && (() => {
+                const pf = [...new Set(connections.filter((c) => picked.includes(c.id)).map((c) => CHANNEL_TO_PLATFORM[c.channel]).filter(Boolean))];
+                const specs = specsForPlatforms(pf);
+                return (
+                  <div className="mt-3">
+                    <p className="text-[11px] font-bold text-[#526F8A]">Same media, auto-fitted to every platform — smart-cropped, quality kept:</p>
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {(specs.length ? specs : specsForPlatforms(["INSTAGRAM", "FACEBOOK", "LINKEDIN", "YOUTUBE"])).map((s) => (
+                        <figure key={`${s.platform}-${s.format}`} className="w-24">
+                          {media.resourceType === "image"
+                            ? <img src={buildVariantUrl(media.cloudName, media.publicId, "image", s)} alt={s.label} className="h-28 w-24 rounded-lg border border-[#C8D8EA] object-cover" />
+                            : <video src={buildVariantUrl(media.cloudName, media.publicId, "video", s)} className="h-28 w-24 rounded-lg border border-[#C8D8EA] object-cover" muted />}
+                          <figcaption className="mt-1 text-[10px] font-semibold leading-3 text-[#526F8A]">{s.label}<br />{s.width}×{s.height}</figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
 
             <div className="mt-4">
               <p className="text-xs font-bold text-[#476987]">Platforms</p>

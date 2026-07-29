@@ -27,6 +27,8 @@ export async function getPost(workspaceId: string, id: string) {
 export type PostInput = {
   content: string;
   imageUrl?: string | null;
+  mediaPublicId?: string | null;
+  mediaType?: string | null;
   companyId?: string | null;
   scheduledAt?: Date | null;
   connectionIds: string[];
@@ -47,6 +49,8 @@ export async function createPost(workspaceId: string, createdById: string | null
       companyId: input.companyId ?? null,
       content: input.content,
       imageUrl: input.imageUrl ?? null,
+      mediaPublicId: input.mediaPublicId ?? null,
+      mediaType: input.mediaType ?? null,
       scheduledAt: input.scheduledAt ?? null,
       status,
       targets: { create: connections.map((c) => ({ connectionId: c.id, channel: c.channel, status: "PENDING" })) },

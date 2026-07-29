@@ -132,5 +132,12 @@ export async function testProviderCredential(provider: ProviderId, secret: strin
       return testGet("https://api.apify.com/v2/users/me", {
         Authorization: `Bearer ${secret}`,
       });
+    case "CLOUDINARY": {
+      const parts = secret.split(":");
+      if (parts.length < 3) return { ok: false, message: "Use the format cloudName:apiKey:apiSecret." };
+      const [cloudName, apiKey, ...rest] = parts;
+      const basic = Buffer.from(`${apiKey}:${rest.join(":")}`).toString("base64");
+      return testGet(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/usage`, { Authorization: `Basic ${basic}` });
+    }
   }
 }

@@ -385,7 +385,7 @@ function Status({ provider }: { provider: ProviderMetadata }) {
 }
 
 function ProviderIcon({ provider }: { provider: ProviderId }) {
-  const icons: Record<ProviderId, string> = {
+  const icons: Partial<Record<ProviderId, string>> = {
     GEMINI: "/providers/gemini.svg",
     GROQ: "/providers/groq.ico",
     CLOUDFLARE: "/providers/cloudflare.svg",
@@ -395,15 +395,17 @@ function ProviderIcon({ provider }: { provider: ProviderId }) {
     FIRECRAWL: "/providers/firecrawl.ico",
     APIFY: "/providers/apify.ico",
   };
+  const icon = icons[provider];
   return (
     <span
       aria-hidden="true"
-      className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-[#D4DAE2] bg-white shadow-[0_3px_10px_rgba(15,23,42,.07)]"
+      className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-[#D4DAE2] bg-white text-sm font-black text-[#0758C9] shadow-[0_3px_10px_rgba(15,23,42,.07)]"
     >
-      <span
-        className="h-7 w-7 bg-contain bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${icons[provider]})` }}
-      />
+      {icon ? (
+        <span className="h-7 w-7 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${icon})` }} />
+      ) : (
+        provider.slice(0, 2)
+      )}
     </span>
   );
 }

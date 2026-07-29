@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 const createSchema = z.object({
   content: z.string().trim().min(1).max(5000),
   imageUrl: z.string().trim().url().max(600).nullish().or(z.literal("")),
+  mediaPublicId: z.string().trim().max(200).nullish(),
+  mediaType: z.enum(["image", "video"]).nullish(),
   companyId: z.string().trim().max(40).nullish(),
   connectionIds: z.array(z.string().trim().max(40)).min(1).max(20),
   scheduledAt: z.string().datetime().nullish(),
@@ -38,6 +40,8 @@ export async function POST(req: Request) {
   const post = await createPost(g.user.workspaceId, g.user.id, {
     content: d.content,
     imageUrl: d.imageUrl || null,
+    mediaPublicId: d.mediaPublicId ?? null,
+    mediaType: d.mediaType ?? null,
     companyId: d.companyId ?? null,
     connectionIds: d.connectionIds,
     scheduledAt: d.scheduledAt ? new Date(d.scheduledAt) : null,

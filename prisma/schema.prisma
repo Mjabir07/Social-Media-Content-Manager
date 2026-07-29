@@ -307,16 +307,18 @@ model Lead {
 // one PostTarget per connected channel. status: DRAFT | SCHEDULED | PUBLISHED |
 // PARTIAL | FAILED
 model SocialPost {
-  id          String    @id @default(cuid())
-  workspaceId String
-  companyId   String?
-  content     String
-  imageUrl    String?
-  status      String    @default("DRAFT")
-  scheduledAt DateTime?
-  createdById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  workspaceId   String
+  companyId     String?
+  content       String
+  imageUrl      String?
+  mediaPublicId String? // Cloudinary public id — source for per-platform variants
+  mediaType     String? // image | video
+  status        String    @default("DRAFT")
+  scheduledAt   DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   company   Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
