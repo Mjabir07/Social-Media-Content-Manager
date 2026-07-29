@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { ProviderId } from "@/lib/integrations/providers";
 
 type ProviderMetadata = {
@@ -23,8 +23,18 @@ type ProviderMetadata = {
   updatedAt: string | null;
 };
 
+type EnvStatus = {
+  encryptionKey: boolean;
+  gemini: boolean;
+  database: boolean;
+  authSecret: boolean;
+  authUrlSet: boolean;
+  authUrlIsLocalhost: boolean;
+};
+
 type VaultResponse = {
   vaultReady: boolean;
+  env?: EnvStatus;
   providers: ProviderMetadata[];
 };
 
@@ -181,6 +191,8 @@ export function ApiVault({
           <Summary label="Active connections" value={active} />
         </section>
 
+        {data?.env && <EnvPanel env={data.env} />}
+
         {message && (
           <div role="status" className="mt-5 rounded-2xl border border-[#93C5FD] bg-[#EFF6FF] px-5 py-4 text-base font-bold text-[#1E3A5F] shadow-sm">
             {message}
@@ -307,6 +319,37 @@ export function ApiVault({
         </div>
       )}
     </div>
+  );
+}
+
+function EnvPanel({ env }: { env: EnvStatus }) {
+  const items = [
+    { ok: env.encryptionKey, label: "Vault master key", hint: "AZMIN_CREDENTIAL_ENCRYPTION_KEY — encrypts every key you save here" },
+    { ok: env.gemini, label: "Gemini AI key", hint: "GEMINI_API_KEY — powers AI captions and lead qualify (or add Gemini below)" },
+    { ok: env.database, label: "Database", hint: "DATABASE_URL — your Neon connection" },
+    { ok: env.authSecret, label: "Login secret", hint: "NEXTAUTH_SECRET — keeps sign-in sessions safe" },
+    { ok: env.authUrlSet && !env.authUrlIsLocalhost, label: "App URL", hint: env.authUrlIsLocalhost ? "NEXTAUTH_URL still points to localhost — set it to your live Vercel URL" : "NEXTAUTH_URL — your public address" },
+  ];
+  const missing = items.filter((i) => !i.ok).length;
+  return (
+    <section className="mt-6 rounded-2xl border border-[#CBD5E1] bg-white p-5 shadow-[0_6px_18px_rgba(15,23,42,.05)]">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-extrabold">Hosting keys (set on Vercel)</h2>
+        <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider ${missing === 0 ? "bg-[#DDF8EF] text-[#086B52]" : "bg-[#FFF1D5] text-[#855A0D]"}`}>{missing === 0 ? "All set" : `${missing} to set`}</span>
+      </div>
+      <p className="mt-1 text-sm font-medium text-[#475569]">These live in Vercel → Settings → Environment Variables (redeploy after changing). Everything else below is stored right here in the vault — no redeploy.</p>
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+        {items.map((i) => (
+          <div key={i.label} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${i.ok ? "border-[#BEE7D6] bg-[#F3FBF7]" : "border-[#F0C36A] bg-[#FFFBF0]"}`}>
+            {i.ok ? <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-[#0E9F6E]" aria-hidden /> : <XCircle size={18} className="mt-0.5 shrink-0 text-[#D97706]" aria-hidden />}
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-[#172033]">{i.label} <span className={i.ok ? "text-[#0E9F6E]" : "text-[#B45309]"}>· {i.ok ? "Set" : "Missing"}</span></div>
+              <div className="mt-0.5 text-xs font-medium leading-5 text-[#475569]">{i.hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

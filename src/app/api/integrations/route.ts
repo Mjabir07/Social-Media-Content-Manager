@@ -65,8 +65,20 @@ export async function GET() {
     },
   });
   const byProvider = new Map(rows.map((row) => [row.provider, row]));
+  // Non-secret environment status — booleans only, never any value. Lets the
+  // owner see at a glance which infrastructure keys are set on the host (Vercel).
+  const nextAuthUrl = process.env.NEXTAUTH_URL ?? "";
+  const env = {
+    encryptionKey: isCredentialVaultReady(),
+    gemini: Boolean(process.env.GEMINI_API_KEY),
+    database: Boolean(process.env.DATABASE_URL),
+    authSecret: Boolean(process.env.NEXTAUTH_SECRET),
+    authUrlSet: Boolean(nextAuthUrl),
+    authUrlIsLocalhost: nextAuthUrl.includes("localhost") || nextAuthUrl.includes("127.0.0.1"),
+  };
   return Response.json({
     vaultReady: isCredentialVaultReady(),
+    env,
     providers: (Object.keys(PROVIDERS) as ProviderId[]).map((provider) =>
       metadata(byProvider.get(provider), provider),
     ),
