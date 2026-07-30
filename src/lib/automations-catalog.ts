@@ -19,23 +19,25 @@ export const channelMeta: Record<Channel, { label: string; blurb: string; secret
   WEBHOOK: { label: "Webhook / Zapier", blurb: "Call any URL — connect Zapier, Make, or your own endpoint.", secretLabel: "Webhook URL", placeholder: "https://hooks.zapier.com/…" },
 };
 
-export const TRIGGERS = ["LEAD_CREATED", "CONTENT_APPROVED", "CONTENT_PUBLISHED", "MANUAL"] as const;
+export const TRIGGERS = ["LEAD_CREATED", "MESSAGE_RECEIVED", "CONTENT_APPROVED", "CONTENT_PUBLISHED", "MANUAL"] as const;
 export type Trigger = (typeof TRIGGERS)[number];
 
 export const triggerMeta: Record<Trigger, { label: string; vars: string[] }> = {
   LEAD_CREATED: { label: "A new lead comes in", vars: ["name", "company", "email", "phone"] },
+  MESSAGE_RECEIVED: { label: "A customer messages me", vars: ["name", "message"] },
   CONTENT_APPROVED: { label: "Content is approved", vars: ["title", "company", "platform"] },
   CONTENT_PUBLISHED: { label: "Content is published", vars: ["title", "company", "platform", "url"] },
   MANUAL: { label: "I press Run", vars: ["company"] },
 };
 
-export const ACTIONS = ["SEND_WHATSAPP", "SEND_EMAIL", "POST_META", "NOTIFY", "WEBHOOK"] as const;
+export const ACTIONS = ["SEND_WHATSAPP", "SEND_EMAIL", "POST_META", "AI_REPLY", "NOTIFY", "WEBHOOK"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 export const actionMeta: Record<Action, { label: string; channel: Channel | null; needsTemplate: boolean }> = {
   SEND_WHATSAPP: { label: "Send a WhatsApp message", channel: "WHATSAPP", needsTemplate: true },
   SEND_EMAIL: { label: "Send an email", channel: "EMAIL", needsTemplate: true },
   POST_META: { label: "Post to Facebook / Instagram", channel: "META_PAGE", needsTemplate: true },
+  AI_REPLY: { label: "Reply automatically with AI", channel: null, needsTemplate: false },
   NOTIFY: { label: "Notify my team in-app", channel: null, needsTemplate: true },
   WEBHOOK: { label: "Call a webhook (Zapier / Make)", channel: "WEBHOOK", needsTemplate: false },
 };
@@ -48,6 +50,7 @@ export function isChannel(v: unknown): v is Channel { return typeof v === "strin
 export type RecipeTemplate = { key: string; name: string; trigger: Trigger; action: Action; template: string };
 export const RECIPE_TEMPLATES: RecipeTemplate[] = [
   { key: "welcome-whatsapp", name: "Welcome new leads on WhatsApp", trigger: "LEAD_CREATED", action: "SEND_WHATSAPP", template: "Hi {{name}}! Thanks for reaching out to {{company}}. How can we help you today?" },
+  { key: "ai-autoreply", name: "Auto-reply to every message with AI", trigger: "MESSAGE_RECEIVED", action: "AI_REPLY", template: "" },
   { key: "notify-lead", name: "Tell my team about every new lead", trigger: "LEAD_CREATED", action: "NOTIFY", template: "New lead: {{name}} ({{email}} / {{phone}})" },
   { key: "email-lead", name: "Email a new lead a thank-you", trigger: "LEAD_CREATED", action: "SEND_EMAIL", template: "Hi {{name}},\n\nThanks for contacting {{company}} — we'll be in touch shortly.\n" },
   { key: "post-approved", name: "Post approved content to Facebook/Instagram", trigger: "CONTENT_APPROVED", action: "POST_META", template: "{{title}}" },

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { sendViaChannel, type ConnectionRow } from "@/lib/channel-adapters";
 import type { Action, Channel } from "@/lib/automations-catalog";
 import type { InboundMessage } from "@/lib/meta-webhook";
+import { suggestReply } from "@/lib/ai/inbox-reply";
 
 /**
  * Unified inbox data + reply. Conversations and messages are workspace-scoped.
@@ -50,7 +51,55 @@ export async function recordInbound(workspaceId: string, event: InboundMessage) 
   await prisma.message.create({
     data: { conversationId: conversation.id, workspaceId, direction: "IN", body: event.text, externalId: event.messageId ?? null },
   });
+  // If the AI auto-reply automation is on, answer immediately (safe: replying
+  // inside the 24h window is a free text message).
+  try {
+    await autoReplyForMessage(workspaceId, conversation.id);
+  } catch (error) {
+    console.error("auto-reply failed", error);
+  }
   return conversation.id;
+}
+
+// When an "A customer messages me → Reply automatically with AI" automation is
+// enabled, draft a reply from the company brain and send it in the conversation.
+async function autoReplyForMessage(workspaceId: string, conversationId: string) {
+  const auto = await prisma.automation.findFirst({
+    where: { workspaceId, trigger: "MESSAGE_RECEIVED", action: "AI_REPLY", enabled: true },
+    select: { id: true },
+  });
+  if (!auto) return;
+
+  const convo = await prisma.conversation.findFirst({
+    where: { id: conversationId, workspaceId },
+    include: { messages: { orderBy: { createdAt: "asc" }, take: 200 } },
+  });
+  if (!convo) return;
+
+  let companyName: string | null = null;
+  let salesGuidance: string | null = null;
+  let contentGuidance: string | null = null;
+  let aiInstructions: string | null = null;
+  if (convo.companyId) {
+    const company = await prisma.company.findFirst({
+      where: { id: convo.companyId, workspaceId },
+      select: { name: true, brain: { select: { salesGuidance: true, contentGuidance: true, aiInstructions: true } } },
+    });
+    companyName = company?.name ?? null;
+    salesGuidance = company?.brain?.salesGuidance ?? null;
+    contentGuidance = company?.brain?.contentGuidance ?? null;
+    aiInstructions = company?.brain?.aiInstructions ?? null;
+  }
+
+  const result = await suggestReply({
+    messages: convo.messages.map((m) => ({ direction: m.direction, body: m.body })),
+    contactName: convo.contactName,
+    companyName,
+    salesGuidance,
+    contentGuidance,
+    aiInstructions,
+  });
+  await sendReply(workspaceId, conversationId, result.text);
 }
 
 export async function getConversations(workspaceId: string, status = "OPEN") {

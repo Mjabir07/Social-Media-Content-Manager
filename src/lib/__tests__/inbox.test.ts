@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   message: { create: vi.fn() },
   channelConnection: { findFirst: vi.fn() },
   workspace: { findFirst: vi.fn() },
+  automation: { findFirst: vi.fn() },
+  company: { findFirst: vi.fn() },
 }));
 vi.mock("@/lib/db", () => ({ prisma: mocks }));
 
@@ -33,6 +35,35 @@ describe("inbox scoping", () => {
     expect(mocks.message.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ conversationId: "c1", workspaceId: "tenant-a", direction: "IN", body: "hi" }),
     }));
+  });
+});
+
+describe("AI auto-reply", () => {
+  it("answers an inbound message when the AI auto-reply automation is enabled", async () => {
+    mocks.conversation.upsert.mockResolvedValue({ id: "c1" });
+    mocks.message.create.mockResolvedValue({});
+    // Auto-reply automation is on.
+    mocks.automation.findFirst.mockResolvedValue({ id: "auto1" });
+    // Conversation loaded for context, and again inside sendReply.
+    mocks.conversation.findFirst.mockResolvedValue({ id: "c1", channel: "WHATSAPP", contactName: "Sam", contactHandle: "999", externalId: "999", companyId: null, messages: [{ direction: "IN", body: "hello" }] });
+    mocks.channelConnection.findFirst.mockResolvedValue(null); // no live channel -> simulated send
+    mocks.conversation.updateMany.mockResolvedValue({ count: 1 });
+
+    await recordInbound("tenant-a", { kind: "message", channel: "WHATSAPP", externalId: "999", text: "hello" });
+
+    // Two messages written: the inbound, then the AI reply (OUT).
+    const directions = mocks.message.create.mock.calls.map((c) => c[0].data.direction);
+    expect(directions).toContain("IN");
+    expect(directions).toContain("OUT");
+  });
+
+  it("does nothing when no auto-reply automation is enabled", async () => {
+    mocks.conversation.upsert.mockResolvedValue({ id: "c2" });
+    mocks.message.create.mockResolvedValue({});
+    mocks.automation.findFirst.mockResolvedValue(null);
+    await recordInbound("tenant-a", { kind: "message", channel: "WHATSAPP", externalId: "111", text: "hi" });
+    const directions = mocks.message.create.mock.calls.map((c) => c[0].data.direction);
+    expect(directions).toEqual(["IN"]); // only the inbound, no auto-reply
   });
 });
 
