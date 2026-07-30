@@ -224,7 +224,11 @@ export function AutomationsHub({ connections, automations, companies, canManage,
                 <textarea value={autoDraft.template} onChange={(e) => setAutoDraft({ ...autoDraft, template: e.target.value })} className={inputClass + " min-h-28"} placeholder="Type your message. Use {{name}} to insert details." />
               </Field>
             )}
-            <p className="rounded-xl bg-[#F1F5FA] px-3 py-2 text-xs leading-5 text-[#4C6A86]">You can insert: {triggerMeta[autoDraft.trigger].vars.map((v) => `{{${v}}}`).join(", ")}</p>
+            {autoDraft.action === "AI_REPLY" ? (
+              <p className="rounded-xl bg-[#ECFAFF] px-3 py-2 text-xs leading-5 text-[#17577A]">AI writes each reply from your Company Brain. Sensitive messages (refund, complaint, &ldquo;human&rdquo;…) and long back-and-forths are handed to you automatically — safe by default. <strong>Sends real replies once your channel is live.</strong></p>
+            ) : (
+              <p className="rounded-xl bg-[#F1F5FA] px-3 py-2 text-xs leading-5 text-[#4C6A86]">You can insert: {triggerMeta[autoDraft.trigger].vars.map((v) => `{{${v}}}`).join(", ")}</p>
+            )}
           </div>
           <DialogActions onCancel={() => setAutoDraft(null)} onSave={saveAutomation} busy={busy} disabled={autoDraft.name.trim().length < 2} saveLabel={autoDraft.id ? "Save" : "Create"} />
         </Dialog>

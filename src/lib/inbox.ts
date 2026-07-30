@@ -3,6 +3,7 @@ import { sendViaChannel, type ConnectionRow } from "@/lib/channel-adapters";
 import type { Action, Channel } from "@/lib/automations-catalog";
 import type { InboundMessage } from "@/lib/meta-webhook";
 import { suggestReply } from "@/lib/ai/inbox-reply";
+import { shouldAutoReply } from "@/lib/inbox-guardrails";
 
 /**
  * Unified inbox data + reply. Conversations and messages are workspace-scoped.
@@ -75,6 +76,9 @@ async function autoReplyForMessage(workspaceId: string, conversationId: string) 
     include: { messages: { orderBy: { createdAt: "asc" }, take: 200 } },
   });
   if (!convo) return;
+
+  // Safety: hand sensitive or runaway threads to a human instead of auto-replying.
+  if (!shouldAutoReply(convo.messages.map((m) => ({ direction: m.direction, body: m.body }))).reply) return;
 
   let companyName: string | null = null;
   let salesGuidance: string | null = null;
