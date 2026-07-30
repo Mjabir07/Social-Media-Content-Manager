@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCheck, Inbox, MessageCircle, Send, Sparkles } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
+import { SocialIcon } from "@/components/azmin/social-icon";
 
 type Convo = { id: string; channel: string; contactName: string | null; contactHandle: string | null; status: string; unread: number; lastMessagePreview: string | null; lastMessageAt: string };
 type Msg = { id: string; direction: string; body: string; status: string | null; createdAt: string };
@@ -13,17 +14,6 @@ type Selected = { id: string; channel: string; contactName: string | null; conta
 
 const channelLabel: Record<string, string> = { WHATSAPP: "WhatsApp", MESSENGER: "Messenger", INSTAGRAM: "Instagram", META_PAGE: "Facebook", LINKEDIN: "LinkedIn", YOUTUBE: "YouTube", EMAIL: "Email" };
 const channelColor: Record<string, string> = { WHATSAPP: "#25D366", MESSENGER: "#0084FF", INSTAGRAM: "#E1306C", META_PAGE: "#1877F2", LINKEDIN: "#0A66C2", YOUTUBE: "#FF0000", EMAIL: "#EA4335", TELEGRAM: "#229ED9", WEBHOOK: "#6B7280" };
-const channelShort: Record<string, string> = { WHATSAPP: "WA", MESSENGER: "M", INSTAGRAM: "IG", META_PAGE: "f", LINKEDIN: "in", YOUTUBE: "YT", EMAIL: "@", TELEGRAM: "TG", WEBHOOK: "»" };
-
-// A colored brand tile so each channel is identifiable at a glance.
-function ChannelBadge({ channel, size = 26 }: { channel: string; size?: number }) {
-  const color = channelColor[channel] ?? "#94A3B8";
-  return (
-    <span className="grid shrink-0 place-items-center rounded-lg font-black text-white" style={{ background: color, width: size, height: size, fontSize: Math.round(size * 0.42) }} title={channelLabel[channel] ?? channel}>
-      {channelShort[channel] ?? "?"}
-    </span>
-  );
-}
 
 export function InboxView({ conversations, selected, webhookUrl, canManage, userName, userEmail, userRole }: {
   conversations: Convo[]; selected: Selected | null; webhookUrl: string; canManage: boolean; userName: string; userEmail: string; userRole: string;
@@ -91,7 +81,7 @@ export function InboxView({ conversations, selected, webhookUrl, canManage, user
                 return (
                   <Link key={c.id} href={`/azmin/inbox?c=${c.id}`} className={`block rounded-xl px-3 py-2.5 transition ${active ? "bg-[#EAF4FF]" : "hover:bg-[#F1F5FA]"}`}>
                     <div className="flex items-center gap-2">
-                      <ChannelBadge channel={c.channel} size={26} />
+                      <SocialIcon channel={c.channel} size={28} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-bold">{c.contactName || c.contactHandle || "Unknown"}</span>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#526F8A]">{channelLabel[c.channel] ?? c.channel}{c.status === "CLOSED" ? " · closed" : ""}</span>
@@ -114,7 +104,7 @@ export function InboxView({ conversations, selected, webhookUrl, canManage, user
               <>
                 <div className="flex items-center justify-between gap-3 border-b border-[#E4ECF5] px-5 py-3">
                   <div className="flex items-center gap-3">
-                    <ChannelBadge channel={selected.channel} size={34} />
+                    <SocialIcon channel={selected.channel} size={36} />
                     <div>
                       <div className="text-sm font-bold">{selected.contactName || selected.contactHandle || "Unknown"}</div>
                       <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: channelColor[selected.channel] }}>{channelLabel[selected.channel] ?? selected.channel}</div>

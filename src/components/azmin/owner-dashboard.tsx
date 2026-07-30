@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { CompanySwitcher, type SwitcherCompany } from "@/components/azmin/company-switcher";
 import type { DashboardData } from "@/lib/data";
+import type { CommandStats } from "@/lib/command-center";
 
 type Props = {
   user: { name: string; email: string; role: string };
@@ -14,6 +15,7 @@ type Props = {
     brain?: { knowledgeStatus: string } | null;
   };
   data: DashboardData;
+  command: CommandStats;
   from: string;
   to: string;
 };
@@ -25,7 +27,7 @@ const statusMeta = {
   PUBLISHED: { label: "Published", color: "#6EA8FF", href: "/azmin" },
 } as const;
 
-export function AzminOwnerDashboard({ user, workspaceName, companies, activeCompany, data, from, to }: Props) {
+export function AzminOwnerDashboard({ user, workspaceName, companies, activeCompany, data, command, from, to }: Props) {
   const totalActionable = data.statusCounts.PENDING + data.statusCounts.REWORK;
   const publishedRate = data.totalAssets
     ? Math.round((data.statusCounts.PUBLISHED / data.totalAssets) * 100)
@@ -129,6 +131,8 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
                 <Link href="/azmin/companies" className="rounded-lg px-3 py-2 text-xs font-extrabold text-[#526F8A] transition hover:bg-[#EAF4FF] hover:text-[#087DFA]">Companies</Link>
               </div>
             </section>
+
+            <CommandCenter command={command} />
 
             {!isHeadquarters && (
               <div className="mt-5 flex flex-col gap-2 rounded-2xl border border-[#A8D9EE] bg-[#EAF9FF] px-4 py-3 text-sm text-[#174F72] sm:flex-row sm:items-center sm:justify-between">
@@ -271,6 +275,32 @@ function NavItem({ icon, label, active, badge, href }: { icon: GlyphName; label:
   const content = <><Glyph name={icon} /><span>{label}</span>{badge && <span className="ml-auto rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#AFC9DD]">{badge}</span>}</>;
   const cls = `flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "border border-[#1B5B91] bg-[#0A3767] font-extrabold text-white shadow-[0_8px_20px_rgba(3,20,46,0.2)]" : "text-[#D0E0EC] hover:bg-white/[0.08] hover:text-white"}`;
   return href ? <Link href={href} className={cls}>{content}</Link> : <div className={cls}>{content}</div>;
+}
+
+function CommandCenter({ command }: { command: CommandStats }) {
+  const money = (cents: number) => `AED ${(cents / 100).toLocaleString()}`;
+  const tiles: { label: string; value: string | number; sub: string; href: string; tone: string }[] = [
+    { label: "Open leads", value: command.openLeads, sub: "in the pipeline", href: "/azmin/leads", tone: "#0758C9" },
+    { label: "Won", value: money(command.wonValueCents), sub: `${command.wonCount} deal${command.wonCount === 1 ? "" : "s"}`, href: "/azmin/leads", tone: "#087B54" },
+    { label: "Unread messages", value: command.unreadMessages, sub: `${command.openConversations} open chats`, href: "/azmin/inbox", tone: "#B4231C" },
+    { label: "Live automations", value: command.activeAutomations, sub: `${command.connections} channels`, href: "/azmin/automations", tone: "#5C3AAE" },
+    { label: "Scheduled posts", value: command.scheduledPosts, sub: `${command.publishedPosts} published`, href: "/azmin/publishing", tone: "#8A5A0B" },
+    { label: "Services", value: command.services, sub: "in the catalogue", href: "/azmin/services", tone: "#234B70" },
+  ];
+  return (
+    <section className="mt-5">
+      <p className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#3B668E]"><span className="h-2 w-2 rounded-full bg-[#21C6DB]" /> Command center · live</p>
+      <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        {tiles.map((t) => (
+          <Link key={t.label} href={t.href} className="group rounded-[15px] border border-[#C5D6E6] bg-white p-4 shadow-[0_8px_24px_rgba(3,20,46,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(7,27,43,0.09)]">
+            <div className="truncate text-2xl font-black tracking-[-.03em] tabular-nums" style={{ color: t.tone }}>{t.value}</div>
+            <div className="mt-1 text-[11px] font-extrabold uppercase tracking-[.06em] text-[#234B70]">{t.label}</div>
+            <div className="mt-0.5 truncate text-[11px] font-medium text-[#526F8A]">{t.sub}</div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function Metric({ label, value, helper, icon, tone, href }: { label: string; value: string | number; helper: string; icon: GlyphName; tone: "navy" | "amber" | "teal" | "blue"; href: string }) {

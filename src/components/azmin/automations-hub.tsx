@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bolt, Link2, Plug, Plus, Power, Trash2, X } from "lucide-react";
+import { Bolt, Plug, Plus, Power, Trash2, X } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
+import { SocialIcon } from "@/components/azmin/social-icon";
 import {
   ACTIONS,
   CHANNELS,
@@ -116,7 +117,7 @@ export function AutomationsHub({ connections, automations, companies, canManage,
               {connections.map((c) => (
                 <div key={c.id} className="rounded-2xl border border-[#C8D8EA] bg-white p-4 shadow-[0_10px_28px_rgba(3,20,46,.05)]">
                   <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#E5F0FF] text-[#0758C9]"><Link2 size={18} aria-hidden /></span>
+                    <SocialIcon channel={c.channel} size={40} rounded="0.75rem" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-bold">{c.displayName}</div>
                       <div className="text-xs font-semibold text-[#526F8A]">{channelMeta[c.channel]?.label ?? c.channel}</div>

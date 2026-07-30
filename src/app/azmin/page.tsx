@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/session";
 import { emptyDashboardData, getDashboardData } from "@/lib/data";
+import { getCommandStats } from "@/lib/command-center";
 import { getCompanies } from "@/lib/companies";
 import { ACTIVE_COMPANY_COOKIE, resolveActiveCompany } from "@/lib/company-context";
 import { AzminOwnerDashboard } from "@/components/azmin/owner-dashboard";
@@ -34,6 +35,7 @@ export default async function AzminPreviewPage({
   const data = activeCompany?.isHeadquarters
     ? await getDashboardData(user.workspaceId, { from, to })
     : emptyDashboardData();
+  const command = await getCommandStats(user.workspaceId);
 
   return (
     <AzminOwnerDashboard
@@ -42,6 +44,7 @@ export default async function AzminPreviewPage({
       companies={companies}
       activeCompany={activeCompany}
       data={data}
+      command={command}
       from={from}
       to={to}
     />

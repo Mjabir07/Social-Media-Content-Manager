@@ -11,6 +11,7 @@ import { channelMeta, type Channel } from "@/lib/automations-catalog";
 import { postStatusMeta, type PostStatus, type TargetStatus } from "@/lib/posts-catalog";
 import { specsForPlatforms } from "@/lib/media-specs";
 import { buildVariantUrl } from "@/lib/cloudinary-url";
+import { SocialIcon } from "@/components/azmin/social-icon";
 
 const CHANNEL_TO_PLATFORM: Record<string, string> = { INSTAGRAM: "INSTAGRAM", META_PAGE: "FACEBOOK", LINKEDIN: "LINKEDIN", YOUTUBE: "YOUTUBE" };
 
@@ -152,8 +153,8 @@ export function PublishingView({ posts, connections, companies, canManage, userN
                   {connections.map((c) => {
                     const on = picked.includes(c.id);
                     return (
-                      <button key={c.id} onClick={() => toggle(c.id)} className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${on ? "border-[#087CFA] bg-[#EAF4FF] text-[#0758C9]" : "border-[#CEDBE9] bg-white text-[#526F8A] hover:border-[#087CFA]"}`}>
-                        {channelMeta[c.channel]?.label ?? c.channel} · {c.displayName}
+                      <button key={c.id} onClick={() => toggle(c.id)} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition ${on ? "border-[#087CFA] bg-[#EAF4FF] text-[#0758C9]" : "border-[#CEDBE9] bg-white text-[#526F8A] hover:border-[#087CFA]"}`}>
+                        <SocialIcon channel={c.channel} size={20} /> {channelMeta[c.channel]?.label ?? c.channel} · {c.displayName}
                       </button>
                     );
                   })}
