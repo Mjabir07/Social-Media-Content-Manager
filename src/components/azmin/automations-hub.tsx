@@ -37,7 +37,18 @@ export function AutomationsHub({ connections, automations, companies, canManage,
   const [connDraft, setConnDraft] = useState<null | { channel: Channel; displayName: string; secret: string; companyId: string }>(null);
   const [autoDraft, setAutoDraft] = useState<null | AutoDraft>(null);
   const [busy, setBusy] = useState(false);
+  const [testingId, setTestingId] = useState("");
   const [error, setError] = useState("");
+
+  async function testWhatsApp(id: string) {
+    const to = window.prompt("Send a WhatsApp test to which number?\nInclude country code, e.g. +9715XXXXXXXX\n(Must be a number you added as a test recipient in Meta.)");
+    if (!to) return;
+    setTestingId(id); setError("");
+    const res = await fetch(`/api/connections/${id}/whatsapp-test`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to }) });
+    const d = await res.json().catch(() => ({}));
+    setTestingId("");
+    window.alert(res.ok ? (d.detail || "Sent — check WhatsApp.") : (d.error || d.detail || "Send failed."));
+  }
 
   async function call(url: string, method: string, body?: unknown) {
     setBusy(true); setError("");
@@ -103,14 +114,19 @@ export function AutomationsHub({ connections, automations, companies, canManage,
           ) : (
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {connections.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 rounded-2xl border border-[#C8D8EA] bg-white p-4 shadow-[0_10px_28px_rgba(3,20,46,.05)]">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#E5F0FF] text-[#0758C9]"><Link2 size={18} aria-hidden /></span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-bold">{c.displayName}</div>
-                    <div className="text-xs font-semibold text-[#526F8A]">{channelMeta[c.channel]?.label ?? c.channel}</div>
+                <div key={c.id} className="rounded-2xl border border-[#C8D8EA] bg-white p-4 shadow-[0_10px_28px_rgba(3,20,46,.05)]">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#E5F0FF] text-[#0758C9]"><Link2 size={18} aria-hidden /></span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-bold">{c.displayName}</div>
+                      <div className="text-xs font-semibold text-[#526F8A]">{channelMeta[c.channel]?.label ?? c.channel}</div>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${c.status === "CONNECTED" ? "bg-[#E7F8EF] text-[#087B54]" : "bg-[#EEF1F5] text-[#526F8A]"}`}>{c.status === "CONNECTED" ? "Connected" : "Off"}</span>
+                    {canManage && <button onClick={() => call(`/api/connections/${c.id}`, "DELETE")} disabled={busy} aria-label="Remove" className="grid h-8 w-8 place-items-center rounded-lg text-[#A12C2C] hover:bg-[#FFF0F0] disabled:opacity-50"><Trash2 size={14} aria-hidden /></button>}
                   </div>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${c.status === "CONNECTED" ? "bg-[#E7F8EF] text-[#087B54]" : "bg-[#EEF1F5] text-[#526F8A]"}`}>{c.status === "CONNECTED" ? "Connected" : "Off"}</span>
-                  {canManage && <button onClick={() => call(`/api/connections/${c.id}`, "DELETE")} disabled={busy} aria-label="Remove" className="grid h-8 w-8 place-items-center rounded-lg text-[#A12C2C] hover:bg-[#FFF0F0] disabled:opacity-50"><Trash2 size={14} aria-hidden /></button>}
+                  {canManage && c.channel === "WHATSAPP" && (
+                    <button onClick={() => testWhatsApp(c.id)} disabled={testingId === c.id} className="mt-3 w-full rounded-lg border border-[#B8CCE0] bg-[#F8FBFF] px-3 py-2 text-xs font-bold text-[#0758C9] hover:border-[#087CFA] disabled:opacity-50">{testingId === c.id ? "Sending…" : "Send a test message"}</button>
+                  )}
                 </div>
               ))}
             </div>

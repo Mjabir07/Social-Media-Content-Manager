@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { encryptCredential } from "@/lib/integrations/credential-crypto";
+import { encryptCredential, decryptCredential } from "@/lib/integrations/credential-crypto";
 import { connectionProviderTag } from "@/lib/channel-adapters";
 
 /**
@@ -69,4 +69,19 @@ export async function setConnectionStatus(workspaceId: string, id: string, statu
 export async function deleteConnection(workspaceId: string, id: string) {
   const result = await prisma.channelConnection.deleteMany({ where: { id, workspaceId } });
   return result.count;
+}
+
+// Decrypt a connection's stored secret (server-only callers). Scoped by workspace.
+export async function getConnectionSecret(workspaceId: string, id: string): Promise<{ channel: string; secret: string } | null> {
+  const conn = await prisma.channelConnection.findFirst({ where: { id, workspaceId } });
+  if (!conn?.encryptedConfig || !conn.iv || !conn.authTag) return null;
+  try {
+    const secret = decryptCredential({
+      encryptedValue: conn.encryptedConfig, iv: conn.iv, authTag: conn.authTag, keyVersion: conn.keyVersion,
+      workspaceId, provider: connectionProviderTag(conn.channel),
+    });
+    return { channel: conn.channel, secret };
+  } catch {
+    return null;
+  }
 }
