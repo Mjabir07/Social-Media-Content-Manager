@@ -57,6 +57,7 @@ export const ACTIONS = {
   "post.created": { category: "content", verb: "drafted a multi-platform post" },
   "post.published": { category: "content", verb: "published a multi-platform post" },
   "post.deleted": { category: "content", verb: "removed a post" },
+  "inbox.escalated": { category: "content", verb: "escalated a conversation" },
   "integration.credential_saved": { category: "business", verb: "saved API credential for" },
   "integration.credential_status_changed": { category: "business", verb: "changed API access for" },
   "integration.credential_tested": { category: "business", verb: "tested API connection for" },

@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   workspace: { findFirst: vi.fn() },
   automation: { findFirst: vi.fn() },
   company: { findFirst: vi.fn() },
+  membership: { findMany: vi.fn() },
+  notification: { createMany: vi.fn() },
 }));
 vi.mock("@/lib/db", () => ({ prisma: mocks }));
 
@@ -55,6 +57,26 @@ describe("AI auto-reply", () => {
     const directions = mocks.message.create.mock.calls.map((c) => c[0].data.direction);
     expect(directions).toContain("IN");
     expect(directions).toContain("OUT");
+  });
+
+  it("escalates a sensitive message: no auto-reply, notify owners/admins", async () => {
+    mocks.conversation.upsert.mockResolvedValue({ id: "c3" });
+    mocks.message.create.mockResolvedValue({});
+    mocks.automation.findFirst.mockResolvedValue({ id: "auto1" });
+    mocks.conversation.findFirst.mockResolvedValue({ id: "c3", channel: "WHATSAPP", contactName: "Sam", contactHandle: "999", externalId: "999", companyId: null, messages: [{ direction: "IN", body: "I want a refund now" }] });
+    mocks.membership.findMany.mockResolvedValue([{ userId: "owner1" }]);
+    mocks.notification.createMany.mockResolvedValue({});
+
+    await recordInbound("tenant-a", { kind: "message", channel: "WHATSAPP", externalId: "999", text: "I want a refund now" });
+
+    // No AI reply sent (only the inbound message written).
+    const directions = mocks.message.create.mock.calls.map((c) => c[0].data.direction);
+    expect(directions).toEqual(["IN"]);
+    // Owner notified about the escalation.
+    expect(mocks.notification.createMany).toHaveBeenCalled();
+    expect(mocks.membership.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { workspaceId: "tenant-a", role: { in: ["OWNER", "ADMIN"] } },
+    }));
   });
 
   it("does nothing when no auto-reply automation is enabled", async () => {

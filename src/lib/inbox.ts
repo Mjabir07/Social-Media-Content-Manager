@@ -4,6 +4,7 @@ import type { Action, Channel } from "@/lib/automations-catalog";
 import type { InboundMessage } from "@/lib/meta-webhook";
 import { suggestReply } from "@/lib/ai/inbox-reply";
 import { shouldAutoReply } from "@/lib/inbox-guardrails";
+import { createNotifications } from "@/lib/notifications";
 
 /**
  * Unified inbox data + reply. Conversations and messages are workspace-scoped.
@@ -77,8 +78,13 @@ async function autoReplyForMessage(workspaceId: string, conversationId: string) 
   });
   if (!convo) return;
 
-  // Safety: hand sensitive or runaway threads to a human instead of auto-replying.
-  if (!shouldAutoReply(convo.messages.map((m) => ({ direction: m.direction, body: m.body }))).reply) return;
+  // Safety: hand sensitive or runaway threads to a human instead of auto-replying,
+  // and notify the team when a message is escalated so it never slips.
+  const guard = shouldAutoReply(convo.messages.map((m) => ({ direction: m.direction, body: m.body })));
+  if (!guard.reply) {
+    if (guard.reason?.includes("escalation")) await notifyEscalation(workspaceId, { id: convo.id, contactName: convo.contactName, contactHandle: convo.contactHandle });
+    return;
+  }
 
   let companyName: string | null = null;
   let salesGuidance: string | null = null;
@@ -104,6 +110,19 @@ async function autoReplyForMessage(workspaceId: string, conversationId: string) 
     aiInstructions,
   });
   await sendReply(workspaceId, conversationId, result.text);
+}
+
+// Ping every workspace owner/admin in-app when the agent hands a thread to a
+// human, so escalated conversations are never missed. A synthetic system actor
+// is used since there is no logged-in user in the webhook.
+async function notifyEscalation(workspaceId: string, convo: { id: string; contactName: string | null; contactHandle: string | null }) {
+  const admins = await prisma.membership.findMany({ where: { workspaceId, role: { in: ["OWNER", "ADMIN"] } }, select: { userId: true } });
+  const name = convo.contactName || convo.contactHandle || "A customer";
+  await createNotifications(
+    { id: "system", name: "AZMIN AI", avatarColor: "#5C3AAE", workspaceId },
+    admins.map((a) => a.userId),
+    { action: "inbox.escalated", message: `${name} needs a human reply`, targetType: "conversation", targetId: convo.id, targetLabel: name },
+  );
 }
 
 export async function getConversations(workspaceId: string, status = "OPEN") {
