@@ -289,7 +289,7 @@ function CommandCenter({ command }: { command: CommandStats }) {
   ];
   return (
     <section className="mt-5">
-      <p className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#3B668E]"><span className="h-2 w-2 rounded-full bg-[#21C6DB]" /> Command center · live</p>
+      <p className="mb-2 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#3B668E]"><span className="h-2 w-2 rounded-full bg-[#21C6DB]" /> Command center · live{command.scope === "company" ? " · this company" : ""}</p>
       <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {tiles.map((t) => (
           <Link key={t.label} href={t.href} className="group rounded-[15px] border border-[#C5D6E6] bg-white p-4 shadow-[0_8px_24px_rgba(3,20,46,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(7,27,43,0.09)]">

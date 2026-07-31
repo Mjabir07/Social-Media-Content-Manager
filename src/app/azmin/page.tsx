@@ -35,7 +35,10 @@ export default async function AzminPreviewPage({
   const data = activeCompany?.isHeadquarters
     ? await getDashboardData(user.workspaceId, { from, to })
     : emptyDashboardData();
-  const command = await getCommandStats(user.workspaceId);
+  const command = await getCommandStats(
+    user.workspaceId,
+    activeCompany && !activeCompany.isHeadquarters ? activeCompany.id : undefined,
+  );
 
   return (
     <AzminOwnerDashboard

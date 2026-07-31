@@ -27,6 +27,7 @@ describe("command center stats", () => {
     const stats = await getCommandStats("tenant-a");
 
     expect(stats).toEqual({
+      scope: "workspace",
       openLeads: 5, wonCount: 2, wonValueCents: 250000,
       unreadMessages: 7, openConversations: 3,
       activeAutomations: 4, connections: 2,
@@ -34,6 +35,26 @@ describe("command center stats", () => {
     });
     expect(mocks.lead.count).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ workspaceId: "tenant-a" }),
+    }));
+  });
+
+  it("narrows company-tagged modules to the active company", async () => {
+    mocks.lead.count.mockResolvedValue(0);
+    mocks.lead.aggregate.mockResolvedValue({ _sum: { valueCents: null }, _count: { _all: 0 } });
+    mocks.conversation.aggregate.mockResolvedValue({ _sum: { unread: null }, _count: { _all: 0 } });
+    mocks.automation.count.mockResolvedValue(0);
+    mocks.channelConnection.count.mockResolvedValue(0);
+    mocks.socialPost.count.mockResolvedValue(0);
+    mocks.service.count.mockResolvedValue(0);
+
+    const stats = await getCommandStats("tenant-a", "grace");
+    expect(stats.scope).toBe("company");
+    // Leads scoped to the company; services include shared (company OR null).
+    expect(mocks.lead.count).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ companyId: "grace" }),
+    }));
+    expect(mocks.service.count).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ OR: [{ companyId: "grace" }, { companyId: null }] }),
     }));
   });
 });
