@@ -49,9 +49,9 @@ export function InfrastructureView({
             </div>
             <h3 className="font-bold text-[#173A5C]">Coolify Servers</h3>
             <p className="mt-1 text-sm text-[#526F8A]">Connect your Hetzner/VPS instances running Coolify to automate deployments.</p>
-            <button className="mt-4 w-full rounded-xl bg-[#087CFA] py-2 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
-              Add Coolify Server
-            </button>
+            <Link href="/azmin/infrastructure/hosting" className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#087CFA] py-2 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
+              Manage Coolify Servers
+            </Link>
           </div>
 
           {/* Domains Card */}
