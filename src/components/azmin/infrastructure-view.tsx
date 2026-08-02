@@ -61,9 +61,9 @@ export function InfrastructureView({
             </div>
             <h3 className="font-bold text-[#173A5C]">Domains & DNS</h3>
             <p className="mt-1 text-sm text-[#526F8A]">Track domain expirations and SSL certificate renewals for all client sites.</p>
-            <button className="mt-4 w-full rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] py-2 text-sm font-bold text-[#234B70] transition hover:border-[#087CFA]">
+            <Link href="/azmin/infrastructure/domains" className="mt-4 flex w-full items-center justify-center rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] py-2 text-sm font-bold text-[#234B70] transition hover:border-[#087CFA]">
               View Domains
-            </button>
+            </Link>
           </div>
 
           {/* Email Services Card */}
