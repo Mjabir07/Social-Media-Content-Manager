@@ -67,6 +67,10 @@ model Workspace {
   commissionPayments  CommissionPayment[]
   socialPosts         SocialPost[]
   conversations       Conversation[]
+  domainRecords       DomainRecord[]
+  hostingRecords      HostingRecord[]
+  emailServiceRecords EmailServiceRecord[]
+  pulseSubscriptions  PulseSubscription[]
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -124,6 +128,10 @@ model Company {
   partnerships  Partnership[]       @relation("PartnerOf")
   socialPosts   SocialPost[]
   conversations Conversation[]
+  domainRecords       DomainRecord[]
+  hostingRecords      HostingRecord[]
+  emailServiceRecords EmailServiceRecord[]
+  pulseSubscriptions  PulseSubscription[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -653,4 +661,78 @@ model PasswordResetToken {
   usedAt    DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// PHASE 6: INFRASTRUCTURE & AZMIN PULSE
+// ==========================================
+
+model DomainRecord {
+  id          String    @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  domainName  String
+  registrar   String?
+  expiryDate  DateTime?
+  autoRenew   Boolean   @default(false)
+  status      String    @default("ACTIVE") // ACTIVE | EXPIRED | TRANSFERRING
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, companyId])
+}
+
+model HostingRecord {
+  id          String    @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  provider    String    // e.g., "Coolify", "Vercel", "Hetzner"
+  planDetails String?
+  serverUuid  String?   // For Coolify integration sync
+  renewalDate DateTime?
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, companyId])
+}
+
+model EmailServiceRecord {
+  id          String    @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  provider    String    // e.g. "Google Workspace", "Microsoft 365"
+  seats       Int       @default(1)
+  renewalDate DateTime?
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, companyId])
+}
+
+model PulseSubscription {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  companyId       String?
+  planName        String
+  status          String    @default("ACTIVE") // ACTIVE | CANCELED | PAST_DUE
+  nextBillingDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, companyId])
 }

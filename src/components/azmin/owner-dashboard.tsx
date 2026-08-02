@@ -64,7 +64,7 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
             <nav className="mt-2 space-y-1.5">
               <NavItem icon="marketing" label="Marketing studio" href="/azmin" />
               <NavItem icon="development" label="Development studio" badge="Soon" />
-              <NavItem icon="infrastructure" label="Infrastructure" badge="Soon" />
+              <NavItem icon="infrastructure" label="Infrastructure" href="/azmin/infrastructure" />
               <NavItem icon="agents" label="AI agents" badge="Soon" />
               {user.role === "OWNER" && <NavItem icon="integrations" label="API Vault" href="/azmin/settings/integrations" badge="Secure" />}
             </nav>
