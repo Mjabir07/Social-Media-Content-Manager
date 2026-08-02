@@ -1,7 +1,7 @@
-import { db } from './db'
+import { prisma } from './db'
 
 export async function getHostingRecords(workspaceId: string) {
-  return db.hostingRecord.findMany({
+  return prisma.hostingRecord.findMany({
     where: { workspaceId },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -13,7 +13,7 @@ export async function getHostingRecords(workspaceId: string) {
 }
 
 export async function getDomainRecords(workspaceId: string) {
-  return db.domainRecord.findMany({
+  return prisma.domainRecord.findMany({
     where: { workspaceId },
     orderBy: { expiryDate: 'asc' },
     include: {
