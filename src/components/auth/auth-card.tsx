@@ -21,7 +21,7 @@ export function AuthCard({
 
         <div className="relative flex items-center gap-2.5">
           <span className="relative h-12 w-12 overflow-hidden rounded-xl border border-white/25 bg-[#F4FAFF] shadow-glow-sm">
-            <Image src="/brand/azmin-mark-v2.png" alt="AZMIN logo" fill priority sizes="48px" className="object-contain p-0.5" />
+            <Image src="/brand/azmin-c1-mark.png" alt="AZMIN logo" fill priority sizes="48px" className="object-contain p-0.5" />
           </span>
           <span className="font-display text-[18px] font-bold tracking-tight">AZMIN Digital OS</span>
         </div>
@@ -73,7 +73,7 @@ export function AuthCard({
           {/* Compact brand mark for mobile (the panel is hidden there) */}
           <div className="mb-5 flex items-center justify-center gap-2 md:hidden">
             <span className="relative h-10 w-10 overflow-hidden rounded-xl border border-line bg-[#F4FAFF] shadow-glow-sm">
-              <Image src="/brand/azmin-mark-v2.png" alt="AZMIN logo" fill priority sizes="40px" className="object-contain p-0.5" />
+              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN logo" fill priority sizes="40px" className="object-contain p-0.5" />
             </span>
             <span className="font-display text-[16px] font-bold">AZMIN Digital OS</span>
           </div>
