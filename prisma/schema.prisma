@@ -71,6 +71,31 @@ model Workspace {
   hostingRecords      HostingRecord[]
   emailServiceRecords EmailServiceRecord[]
   pulseSubscriptions  PulseSubscription[]
+  coolifyConnections  CoolifyConnection[]
+}
+
+// A live connection to a self-hosted Coolify instance (your VPS). The API token
+// is encrypted with the app master key like the vault; the browser never sees
+// it. status: CONNECTED | ERROR | DISCONNECTED
+model CoolifyConnection {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  name           String
+  baseUrl        String
+  encryptedToken String?
+  iv             String?
+  authTag        String?
+  keyVersion     Int       @default(1)
+  status         String    @default("DISCONNECTED")
+  lastError      String?
+  lastCheckedAt  DateTime?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 // Workspace-scoped API credential. The raw secret is encrypted by the app with
@@ -117,17 +142,17 @@ model Company {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  brandProfile  BrandProfile?
-  brain         CompanyBrain?
-  agents        AgentProfile[]
-  services      Service[]
-  connections   ChannelConnection[]
-  automations   Automation[]
-  leads         Lead[]
-  partnerships  Partnership[]       @relation("PartnerOf")
-  socialPosts   SocialPost[]
-  conversations Conversation[]
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  brandProfile        BrandProfile?
+  brain               CompanyBrain?
+  agents              AgentProfile[]
+  services            Service[]
+  connections         ChannelConnection[]
+  automations         Automation[]
+  leads               Lead[]
+  partnerships        Partnership[]        @relation("PartnerOf")
+  socialPosts         SocialPost[]
+  conversations       Conversation[]
   domainRecords       DomainRecord[]
   hostingRecords      HostingRecord[]
   emailServiceRecords EmailServiceRecord[]
@@ -690,9 +715,9 @@ model HostingRecord {
   id          String    @id @default(cuid())
   workspaceId String
   companyId   String?
-  provider    String    // e.g., "Coolify", "Vercel", "Hetzner"
+  provider    String // e.g., "Coolify", "Vercel", "Hetzner"
   planDetails String?
-  serverUuid  String?   // For Coolify integration sync
+  serverUuid  String? // For Coolify integration sync
   renewalDate DateTime?
   status      String    @default("ACTIVE")
   createdAt   DateTime  @default(now())
@@ -708,7 +733,7 @@ model EmailServiceRecord {
   id          String    @id @default(cuid())
   workspaceId String
   companyId   String?
-  provider    String    // e.g. "Google Workspace", "Microsoft 365"
+  provider    String // e.g. "Google Workspace", "Microsoft 365"
   seats       Int       @default(1)
   renewalDate DateTime?
   status      String    @default("ACTIVE")

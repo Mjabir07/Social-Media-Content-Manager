@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Server, Plus, Settings, Activity } from "lucide-react";
+import { Server, Settings, Activity } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
+import { CoolifyConnections, type CoolifyConnectionDTO } from "@/components/azmin/coolify-connections";
 
 type HostingRecord = {
   id: string;
@@ -16,11 +17,15 @@ type HostingRecord = {
 
 export function HostingView({
   records,
+  coolifyConnections,
+  canManage,
   userName,
   userEmail,
   userRole,
 }: {
   records: HostingRecord[];
+  coolifyConnections: CoolifyConnectionDTO[];
+  canManage: boolean;
   userName: string;
   userEmail: string;
   userRole: string;
@@ -61,13 +66,14 @@ export function HostingView({
               Manage your VPS instances and Coolify connections to deploy AZMIN and client sites.
             </p>
           </div>
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
-            <Plus size={16} />
-            Connect Server
-          </button>
+        </div>
+
+        <div className="mt-9">
+          <CoolifyConnections initialConnections={coolifyConnections} canManage={canManage} />
         </div>
 
         <section className="mt-9">
+          <h2 className="mb-4 font-display text-lg font-bold text-[#173A5C]">Hosting & renewal records</h2>
           {records.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#AFC6DE] bg-[#F5F9FE] px-5 py-12 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF9FF] text-[#087CFA]">
