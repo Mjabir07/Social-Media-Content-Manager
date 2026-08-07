@@ -29,6 +29,9 @@ export function VaultView({
   userName,
   userEmail,
   userRole,
+  scopeClientId,
+  scopeClientName,
+  embedded = false,
 }: {
   initialCredentials: VaultCredentialDTO[];
   vaultReady: boolean;
@@ -37,10 +40,13 @@ export function VaultView({
   userName: string;
   userEmail: string;
   userRole: string;
+  scopeClientId?: string;
+  scopeClientName?: string;
+  embedded?: boolean;
 }) {
   const [creds, setCreds] = useState(initialCredentials);
   const [showForm, setShowForm] = useState(false);
-  const [clientName, setClientName] = useState("");
+  const [clientName, setClientName] = useState(scopeClientName ?? "");
   const [category, setCategory] = useState<VaultCategory>("EMAIL");
   const [label, setLabel] = useState("");
   const [username, setUsername] = useState("");
@@ -56,7 +62,7 @@ export function VaultView({
   const groups = groupByClient(creds);
 
   async function refresh() {
-    const res = await fetch("/api/vault", { cache: "no-store" });
+    const res = await fetch(`/api/vault${scopeClientId ? `?clientId=${scopeClientId}` : ""}`, { cache: "no-store" });
     if (res.ok) setCreds((await res.json()).credentials ?? []);
   }
 
@@ -67,7 +73,7 @@ export function VaultView({
     const res = await fetch("/api/vault", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientName, category, label, username: username || null, url: url || null, secret: secret || null, notes: notes || null }),
+      body: JSON.stringify({ clientName: scopeClientName ?? clientName, clientId: scopeClientId ?? null, category, label, username: username || null, url: url || null, secret: secret || null, notes: notes || null }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -112,45 +118,19 @@ export function VaultView({
 
   const inputCls = "w-full rounded-xl border border-[#B8CCE0] bg-white px-3.5 py-2.5 text-sm text-[#0f2137] outline-none placeholder:text-[#93A9BF] focus:border-[#087CFA]";
 
-  return (
-    <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
-      <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <Link href="/azmin" className="flex items-center gap-3">
-            <span className="relative h-10 w-10 shrink-0">
-              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
-            </span>
-            <span>
-              <strong className="block font-display text-[15px] font-bold">AZMIN Digital OS</strong>
-              <span className="mt-0.5 block text-[11px] font-extrabold uppercase tracking-[.17em] text-[#456784]">Client Vault</span>
-            </span>
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <Link href="/azmin" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Command center</Link>
-            <AzminProfileMenu name={userName} email={userEmail} role={userRole} />
-          </div>
-        </div>
-      </header>
+  const content = (
+    <>
+        {canManage && embedded && !showForm && (
+          <button onClick={() => setShowForm(true)} className="mb-4 inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
+            <Plus size={16} /> Add credential
+          </button>
+        )}
 
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-8 sm:pt-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Secure store</p>
-            <h1 className="mt-1 flex items-center gap-3 font-display text-3xl font-bold tracking-[-.03em]">
-              <KeyRound className="text-[#087CFA]" size={28} /> Client Vault
-            </h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Domain panels, email logins, hosting — encrypted &amp; grouped per client. Reveal a password in one click when a client asks.</p>
-          </div>
-          {canManage && !showForm && (
-            <button onClick={() => setShowForm(true)} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
-              <Plus size={16} /> Add credential
-            </button>
-          )}
-        </div>
-
-        <p className="mt-4 flex items-center gap-2 rounded-xl border border-[#CDE8D6] bg-[#F2FBF5] px-4 py-2.5 text-xs font-semibold text-[#0F7A46]">
-          <ShieldCheck size={14} /> Secrets are AES-256-GCM encrypted at rest. Only admins can reveal them, and every reveal is logged in Activity.
-        </p>
+        {!embedded && (
+          <p className="mt-4 flex items-center gap-2 rounded-xl border border-[#CDE8D6] bg-[#F2FBF5] px-4 py-2.5 text-xs font-semibold text-[#0F7A46]">
+            <ShieldCheck size={14} /> Secrets are AES-256-GCM encrypted at rest. Only admins can reveal them, and every reveal is logged in Activity.
+          </p>
+        )}
 
         {!vaultReady && (
           <p className="mt-3 flex items-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF7E8] px-4 py-2.5 text-xs font-semibold text-[#9A6711]">
@@ -160,10 +140,12 @@ export function VaultView({
 
         {showForm && (
           <form onSubmit={handleCreate} className="mt-6 grid gap-3 rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-[0_10px_28px_rgba(3,20,46,.05)] sm:grid-cols-2">
-            <label className="text-xs font-bold text-[#476987]">
-              Client
-              <input className={`mt-1 ${inputCls}`} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client / project name" required minLength={2} />
-            </label>
+            {!scopeClientName && (
+              <label className="text-xs font-bold text-[#476987]">
+                Client
+                <input className={`mt-1 ${inputCls}`} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client / project name" required minLength={2} />
+              </label>
+            )}
             <label className="text-xs font-bold text-[#476987]">
               Category
               <select className={`mt-1 ${inputCls}`} value={category} onChange={(e) => setCategory(e.target.value as VaultCategory)}>
@@ -202,20 +184,22 @@ export function VaultView({
           </form>
         )}
 
-        <div className="mt-8 space-y-8">
+        <div className={`space-y-8 ${embedded ? "" : "mt-8"}`}>
           {groups.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#AFC6DE] bg-[#F5F9FE] px-5 py-12 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF9FF] text-[#087CFA]"><KeyRound size={30} /></div>
-              <h3 className="mt-4 text-base font-bold text-[#173A5C]">Vault is empty</h3>
-              <p className="mt-1 text-sm text-[#526F8A]">{canManage ? "Add your first client credential — domain panel, email logins, hosting." : "Ask an editor to add credentials."}</p>
+              <h3 className="mt-4 text-base font-bold text-[#173A5C]">{embedded ? "No credentials yet" : "Vault is empty"}</h3>
+              <p className="mt-1 text-sm text-[#526F8A]">{canManage ? "Add a credential — domain panel, email logins, hosting." : "Ask an editor to add credentials."}</p>
             </div>
           ) : (
             groups.map((group) => (
               <section key={group.clientName}>
-                <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-[#173A5C]">
-                  {group.clientName}
-                  <span className="rounded-full bg-[#EAF1F9] px-2 py-0.5 text-xs font-bold text-[#5B7690]">{group.items.length}</span>
-                </h2>
+                {!embedded && (
+                  <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-[#173A5C]">
+                    {group.clientName}
+                    <span className="rounded-full bg-[#EAF1F9] px-2 py-0.5 text-xs font-bold text-[#5B7690]">{group.items.length}</span>
+                  </h2>
+                )}
                 <ul className="grid gap-3">
                   {group.items.map((c) => {
                     const meta = vaultCategoryMeta[c.category];
@@ -275,6 +259,48 @@ export function VaultView({
             ))
           )}
         </div>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
+      <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <Link href="/azmin" className="flex items-center gap-3">
+            <span className="relative h-10 w-10 shrink-0">
+              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
+            </span>
+            <span>
+              <strong className="block font-display text-[15px] font-bold">AZMIN Digital OS</strong>
+              <span className="mt-0.5 block text-[11px] font-extrabold uppercase tracking-[.17em] text-[#456784]">Client Vault</span>
+            </span>
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/azmin/clients" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Clients</Link>
+            <Link href="/azmin" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Command center</Link>
+            <AzminProfileMenu name={userName} email={userEmail} role={userRole} />
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-8 sm:pt-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Secure store</p>
+            <h1 className="mt-1 flex items-center gap-3 font-display text-3xl font-bold tracking-[-.03em]">
+              <KeyRound className="text-[#087CFA]" size={28} /> Client Vault
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Domain panels, email logins, hosting — encrypted &amp; grouped per client. Reveal a password in one click when a client asks.</p>
+          </div>
+          {canManage && !showForm && (
+            <button onClick={() => setShowForm(true)} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
+              <Plus size={16} /> Add credential
+            </button>
+          )}
+        </div>
+        {content}
       </div>
     </main>
   );

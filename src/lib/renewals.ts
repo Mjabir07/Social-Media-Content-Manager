@@ -114,6 +114,7 @@ export type ServiceRenewalInput = {
   currency?: string;
   renewalDate: string | Date;
   notes?: string | null;
+  clientId?: string | null;
 };
 
 export type ServiceRenewalDTO = {
@@ -135,10 +136,10 @@ function toDTO(r: { id: string; service: string; clientName: string; clientEmail
   return { ...r, daysLeft, stage: r.status === "ACTIVE" ? serviceStage(daysLeft) : null };
 }
 
-export async function getServiceRenewals(workspaceId: string): Promise<ServiceRenewalDTO[]> {
+export async function getServiceRenewals(workspaceId: string, clientId?: string): Promise<ServiceRenewalDTO[]> {
   const now = new Date();
   const rows = await prisma.renewal.findMany({
-    where: { workspaceId, deletedAt: null },
+    where: { workspaceId, deletedAt: null, ...(clientId !== undefined ? { clientId } : {}) },
     orderBy: [{ renewalDate: "asc" }],
   });
   return rows.map((r) => toDTO(r, now));
@@ -154,6 +155,7 @@ export async function createServiceRenewal(workspaceId: string, createdById: str
     data: {
       workspaceId,
       createdById: createdById ?? undefined,
+      clientId: input.clientId ?? null,
       service: input.service.trim(),
       clientName: input.clientName.trim(),
       clientEmail: input.clientEmail?.trim() || null,

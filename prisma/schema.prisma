@@ -76,6 +76,32 @@ model Workspace {
   projects            Project[]
   renewals            Renewal[]
   vaultCredentials    VaultCredential[]
+  clients             Client[]
+}
+
+// A managed client — the hub record. Open one to see everything tied to it:
+// vault credentials, service renewals (and later automations, projects). Kept
+// lightweight and separate from Company (which is the heavier brand/HQ concept).
+// status: ACTIVE | INACTIVE. Soft-deleted (deletedAt).
+model Client {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  notes       String?
+  status      String    @default("ACTIVE")
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  vaultCredentials VaultCredential[]
+  renewals         Renewal[]
+
+  @@index([workspaceId, status, deletedAt])
 }
 
 // A client credential kept safely for future use (domain panel, email logins,
@@ -87,6 +113,7 @@ model Workspace {
 model VaultCredential {
   id             String    @id @default(cuid())
   workspaceId    String
+  clientId       String? // link to the Client hub record
   renewalId      String? // optional link to a Renewal
   clientName     String
   category       String    @default("OTHER")
@@ -105,8 +132,10 @@ model VaultCredential {
   deletedAt      DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, clientName, deletedAt])
+  @@index([clientId])
 }
 
 // A standalone service renewal you manage for a client (e.g. Google Workspace
@@ -116,8 +145,9 @@ model VaultCredential {
 model Renewal {
   id          String    @id @default(cuid())
   workspaceId String
+  clientId    String? // link to the Client hub record
   service     String // e.g. "Google Workspace"
-  clientName  String // free-text label, no Company record needed
+  clientName  String // denormalized label (also works standalone)
   clientEmail String?
   amountCents Int?
   currency    String    @default("AED")
@@ -130,8 +160,10 @@ model Renewal {
   deletedAt   DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, status, deletedAt])
+  @@index([clientId])
 }
 
 // A client/internal project. Workspace-scoped, optionally tied to a Company

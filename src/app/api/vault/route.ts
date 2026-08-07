@@ -15,12 +15,14 @@ const createSchema = z.object({
   secret: z.string().max(4000).optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
   renewalId: z.string().trim().optional().nullable(),
+  clientId: z.string().trim().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const g = await guard();
   if (!g.ok) return g.response;
-  const credentials = await getVaultCredentials(g.user.workspaceId);
+  const clientId = new URL(req.url).searchParams.get("clientId") || undefined;
+  const credentials = await getVaultCredentials(g.user.workspaceId, clientId);
   return Response.json({ credentials, vaultReady: isCredentialVaultReady() });
 }
 

@@ -13,12 +13,14 @@ const createSchema = z.object({
   currency: z.string().trim().length(3).optional(),
   renewalDate: z.string().trim().min(4),
   notes: z.string().trim().max(2000).optional().nullable(),
+  clientId: z.string().trim().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const g = await guard();
   if (!g.ok) return g.response;
-  const renewals = await getServiceRenewals(g.user.workspaceId);
+  const clientId = new URL(req.url).searchParams.get("clientId") || undefined;
+  const renewals = await getServiceRenewals(g.user.workspaceId, clientId);
   return Response.json({ renewals });
 }
 

@@ -36,18 +36,24 @@ export function RenewalsView({
   userName,
   userEmail,
   userRole,
+  scopeClientId,
+  scopeClientName,
+  embedded = false,
 }: {
   initialRenewals: ServiceRenewalDTO[];
   canManage: boolean;
   userName: string;
   userEmail: string;
   userRole: string;
+  scopeClientId?: string;
+  scopeClientName?: string;
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [renewals, setRenewals] = useState(initialRenewals);
   const [showForm, setShowForm] = useState(false);
   const [service, setService] = useState("Google Workspace");
-  const [clientName, setClientName] = useState("");
+  const [clientName, setClientName] = useState(scopeClientName ?? "");
   const [clientEmail, setClientEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("AED");
@@ -58,7 +64,7 @@ export function RenewalsView({
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function refresh() {
-    const res = await fetch("/api/renewals", { cache: "no-store" });
+    const res = await fetch(`/api/renewals${scopeClientId ? `?clientId=${scopeClientId}` : ""}`, { cache: "no-store" });
     if (res.ok) setRenewals((await res.json()).renewals ?? []);
     router.refresh();
   }
@@ -71,14 +77,14 @@ export function RenewalsView({
     const res = await fetch("/api/renewals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service, clientName, clientEmail: clientEmail || null, amountCents, currency, renewalDate, notes: notes || null }),
+      body: JSON.stringify({ service, clientName: scopeClientName ?? clientName, clientId: scopeClientId ?? null, clientEmail: clientEmail || null, amountCents, currency, renewalDate, notes: notes || null }),
     });
     setSaving(false);
     if (!res.ok) {
       setError((await res.json().catch(() => ({}))).error ?? "Could not save renewal.");
       return;
     }
-    setClientName(""); setClientEmail(""); setAmount(""); setRenewalDate(""); setNotes(""); setShowForm(false);
+    setClientName(scopeClientName ?? ""); setClientEmail(""); setAmount(""); setRenewalDate(""); setNotes(""); setShowForm(false);
     await refresh();
   }
 
@@ -99,44 +105,16 @@ export function RenewalsView({
 
   const inputCls = "w-full rounded-xl border border-[#B8CCE0] bg-white px-3.5 py-2.5 text-sm text-[#0f2137] outline-none placeholder:text-[#93A9BF] focus:border-[#087CFA]";
 
-  return (
-    <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
-      <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <Link href="/azmin" className="flex items-center gap-3">
-            <span className="relative h-10 w-10 shrink-0">
-              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
-            </span>
-            <span>
-              <strong className="block font-display text-[15px] font-bold">AZMIN Digital OS</strong>
-              <span className="mt-0.5 block text-[11px] font-extrabold uppercase tracking-[.17em] text-[#456784]">Renewals</span>
-            </span>
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <Link href="/azmin" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Command center</Link>
-            <AzminProfileMenu name={userName} email={userEmail} role={userRole} />
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-8 sm:pt-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Recurring services</p>
-            <h1 className="mt-1 flex items-center gap-3 font-display text-3xl font-bold tracking-[-.03em]">
-              <CalendarClock className="text-[#087CFA]" size={28} /> Service renewals
-            </h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Track yearly licenses (Google Workspace, domains, hosting) per client. Auto-reminders keep billing on time.</p>
-          </div>
-          {canManage && !showForm && (
-            <button onClick={() => setShowForm(true)} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
-              <Plus size={16} /> Add renewal
-            </button>
-          )}
-        </div>
+  const content = (
+    <>
+        {canManage && embedded && !showForm && (
+          <button onClick={() => setShowForm(true)} className="mb-4 inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
+            <Plus size={16} /> Add renewal
+          </button>
+        )}
 
         {/* Reminder ladder explainer */}
-        <div className="mt-5 flex flex-wrap items-center gap-2 rounded-xl border border-[#D7E4F0] bg-white px-4 py-3 text-xs font-bold">
+        <div className={`flex flex-wrap items-center gap-2 rounded-xl border border-[#D7E4F0] bg-white px-4 py-3 text-xs font-bold ${embedded ? "" : "mt-5"}`}>
           <span className="text-[#72899E]">Reminder ladder:</span>
           <Ladder color="#5C3AAE" bg="#EFEBFB" text="−30d · Send invoice" />
           <span className="text-[#C8D8EA]">→</span>
@@ -153,10 +131,12 @@ export function RenewalsView({
               Service
               <input className={`mt-1 ${inputCls}`} value={service} onChange={(e) => setService(e.target.value)} placeholder="Google Workspace" required />
             </label>
-            <label className="text-xs font-bold text-[#476987]">
-              Client name
-              <input className={`mt-1 ${inputCls}`} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client / project name" required minLength={2} />
-            </label>
+            {!scopeClientName && (
+              <label className="text-xs font-bold text-[#476987]">
+                Client name
+                <input className={`mt-1 ${inputCls}`} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client / project name" required minLength={2} />
+              </label>
+            )}
             <label className="text-xs font-bold text-[#476987]">
               Client email (for invoice)
               <input className={`mt-1 ${inputCls}`} type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="billing@client.com" />
@@ -246,7 +226,49 @@ export function RenewalsView({
             <FileText size={14} /> One or more renewals are in the invoice window — time to bill the client.
           </p>
         )}
-        <p className="mt-3 flex items-center gap-2 text-xs text-[#8299AE]"><CheckCircle2 size={13} /> Reminders post to your notifications automatically each day — no manual checking.</p>
+        {!embedded && <p className="mt-3 flex items-center gap-2 text-xs text-[#8299AE]"><CheckCircle2 size={13} /> Reminders post to your notifications automatically each day — no manual checking.</p>}
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
+      <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <Link href="/azmin" className="flex items-center gap-3">
+            <span className="relative h-10 w-10 shrink-0">
+              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
+            </span>
+            <span>
+              <strong className="block font-display text-[15px] font-bold">AZMIN Digital OS</strong>
+              <span className="mt-0.5 block text-[11px] font-extrabold uppercase tracking-[.17em] text-[#456784]">Renewals</span>
+            </span>
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/azmin/clients" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Clients</Link>
+            <Link href="/azmin" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Command center</Link>
+            <AzminProfileMenu name={userName} email={userEmail} role={userRole} />
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-8 sm:pt-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Recurring services</p>
+            <h1 className="mt-1 flex items-center gap-3 font-display text-3xl font-bold tracking-[-.03em]">
+              <CalendarClock className="text-[#087CFA]" size={28} /> Service renewals
+            </h1>
+            <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Track yearly licenses (Google Workspace, domains, hosting) per client. Auto-reminders keep billing on time.</p>
+          </div>
+          {canManage && !showForm && (
+            <button onClick={() => setShowForm(true)} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
+              <Plus size={16} /> Add renewal
+            </button>
+          )}
+        </div>
+        {content}
       </div>
     </main>
   );

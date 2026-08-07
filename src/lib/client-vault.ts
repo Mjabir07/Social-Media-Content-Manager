@@ -54,9 +54,9 @@ function toDTO(r: Row): VaultCredentialDTO {
   };
 }
 
-export async function getVaultCredentials(workspaceId: string): Promise<VaultCredentialDTO[]> {
+export async function getVaultCredentials(workspaceId: string, clientId?: string): Promise<VaultCredentialDTO[]> {
   const rows = await prisma.vaultCredential.findMany({
-    where: { workspaceId, deletedAt: null },
+    where: { workspaceId, deletedAt: null, ...(clientId !== undefined ? { clientId } : {}) },
     select: publicSelect,
     orderBy: [{ clientName: "asc" }, { createdAt: "desc" }],
   });
@@ -72,6 +72,7 @@ export type VaultInput = {
   secret?: string | null;
   notes?: string | null;
   renewalId?: string | null;
+  clientId?: string | null;
 };
 
 export async function createVaultCredential(actor: Actor, input: VaultInput): Promise<VaultCredentialDTO> {
@@ -92,6 +93,7 @@ export async function createVaultCredential(actor: Actor, input: VaultInput): Pr
       url: input.url?.trim() || null,
       notes: input.notes?.trim() || null,
       renewalId: input.renewalId ?? null,
+      clientId: input.clientId ?? null,
       encryptedValue: enc?.encryptedValue ?? null,
       iv: enc?.iv ?? null,
       authTag: enc?.authTag ?? null,
