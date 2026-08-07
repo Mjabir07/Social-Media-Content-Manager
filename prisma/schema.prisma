@@ -74,6 +74,32 @@ model Workspace {
   coolifyConnections  CoolifyConnection[]
   tasks               Task[]
   projects            Project[]
+  renewals            Renewal[]
+}
+
+// A standalone service renewal you manage for a client (e.g. Google Workspace
+// yearly license) — NOT tied to a Company. Drives the invoice + reminder ladder:
+// invoice at -30d, nudges at -15d / -7d, final at -1d (see renewals-core).
+// status: ACTIVE | RENEWED | CANCELLED. Soft-deleted (deletedAt).
+model Renewal {
+  id          String    @id @default(cuid())
+  workspaceId String
+  service     String // e.g. "Google Workspace"
+  clientName  String // free-text label, no Company record needed
+  clientEmail String?
+  amountCents Int?
+  currency    String    @default("AED")
+  renewalDate DateTime
+  status      String    @default("ACTIVE")
+  notes       String?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status, deletedAt])
 }
 
 // A client/internal project. Workspace-scoped, optionally tied to a Company

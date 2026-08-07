@@ -52,6 +52,50 @@ export function computeRenewalReminders(items: RenewalItem[], now: Date): Renewa
   return out.sort((a, b) => a.daysLeft - b.daysLeft);
 }
 
+// ---------------------------------------------------------------------------
+// Service renewals (standalone Renewal model). Its own reminder ladder, separate
+// from the infra buckets above: invoice at -30d, nudge -15d & -7d, final -1d.
+// ---------------------------------------------------------------------------
+
+// Ordered most-urgent last. "invoice" is the -30d stage where you raise the bill.
+export const SERVICE_STAGES = ["overdue", "1d", "7d", "15d", "invoice"] as const;
+export type ServiceStage = (typeof SERVICE_STAGES)[number];
+
+// Which stage a service renewal is in, or null if further out than 30 days.
+export function serviceStage(daysLeft: number): ServiceStage | null {
+  if (daysLeft < 0) return "overdue";
+  if (daysLeft <= 1) return "1d";
+  if (daysLeft <= 7) return "7d";
+  if (daysLeft <= 15) return "15d";
+  if (daysLeft <= 30) return "invoice";
+  return null;
+}
+
+export function formatAmount(amountCents: number | null | undefined, currency = "AED"): string | null {
+  if (amountCents == null) return null;
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amountCents / 100);
+}
+
+export type ServiceRenewalLike = {
+  service: string;
+  clientName: string;
+  amountCents: number | null;
+  currency: string;
+  renewalDate: Date | string;
+};
+
+// Pre-rendered notification message for a service-renewal stage.
+export function serviceRenewalMessage(r: ServiceRenewalLike, daysLeft: number, stage: ServiceStage): string {
+  const amt = formatAmount(r.amountCents, r.currency);
+  const tail = amt ? ` — ${amt}` : "";
+  const subject = `${r.service} for ${r.clientName}`;
+  if (stage === "invoice") return `Send renewal invoice: ${subject} renews in ${daysLeft} days${tail}`;
+  if (stage === "overdue") return `OVERDUE: ${subject} renewal date has passed${tail}`;
+  if (daysLeft === 0) return `Final reminder: ${subject} renews today${tail}`;
+  if (daysLeft === 1) return `Final reminder: ${subject} renews tomorrow${tail}`;
+  return `Reminder: ${subject} renews in ${daysLeft} days${tail}`;
+}
+
 const KIND_NOUN: Record<RenewalKind, string> = { domain: "Domain", hosting: "Hosting", email: "Email service" };
 
 // Pre-rendered notification message for a reminder.

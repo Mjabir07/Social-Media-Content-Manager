@@ -3,13 +3,18 @@ import { createNotifications } from "@/lib/notifications";
 import {
   computeRenewalReminders,
   renewalMessage,
+  daysUntil,
+  serviceStage,
+  serviceRenewalMessage,
   type RenewalItem,
   type RenewalReminder,
+  type ServiceStage,
 } from "@/lib/renewals-core";
 
 export * from "@/lib/renewals-core";
 
 const RENEWAL_ACTION = "infra.renewal";
+const SERVICE_ACTION = "renewal.service";
 
 // Gather every dated infra record in a workspace as generic renewal items.
 async function collectRenewalItems(workspaceId: string): Promise<RenewalItem[]> {
@@ -53,9 +58,9 @@ async function ownerAdminIds(workspaceId: string): Promise<string[]> {
 
 // Has this exact record+bucket reminder already been sent? Dedups the daily scan
 // so a record only pings once per bucket (targetLabel holds the bucket).
-async function alreadyReminded(workspaceId: string, targetId: string, bucket: string): Promise<boolean> {
+async function alreadyReminded(workspaceId: string, action: string, targetId: string, bucket: string): Promise<boolean> {
   const existing = await prisma.notification.findFirst({
-    where: { workspaceId, action: RENEWAL_ACTION, targetId, targetLabel: bucket },
+    where: { workspaceId, action, targetId, targetLabel: bucket },
     select: { id: true },
   });
   return existing !== null;
@@ -79,7 +84,7 @@ export async function runRenewalReminders(now: Date = new Date()): Promise<Renew
       if (recipients.length === 0) continue;
 
       for (const r of due) {
-        if (await alreadyReminded(workspaceId, r.id, r.bucket)) continue;
+        if (await alreadyReminded(workspaceId, RENEWAL_ACTION, r.id, r.bucket)) continue;
         await createNotifications(systemActor(workspaceId), recipients, {
           action: RENEWAL_ACTION,
           message: renewalMessage(r),
@@ -91,6 +96,136 @@ export async function runRenewalReminders(now: Date = new Date()): Promise<Renew
       }
     } catch (err) {
       console.error(`runRenewalReminders failed for workspace ${workspaceId}`, err);
+    }
+  }
+
+  return { workspaces: workspaces.length, reminders };
+}
+
+// ---------------------------------------------------------------------------
+// Service renewals (standalone Renewal model) — CRUD + the invoice/reminder scan.
+// ---------------------------------------------------------------------------
+
+export type ServiceRenewalInput = {
+  service: string;
+  clientName: string;
+  clientEmail?: string | null;
+  amountCents?: number | null;
+  currency?: string;
+  renewalDate: string | Date;
+  notes?: string | null;
+};
+
+export type ServiceRenewalDTO = {
+  id: string;
+  service: string;
+  clientName: string;
+  clientEmail: string | null;
+  amountCents: number | null;
+  currency: string;
+  renewalDate: Date;
+  status: string;
+  notes: string | null;
+  daysLeft: number;
+  stage: ServiceStage | null;
+};
+
+function toDTO(r: { id: string; service: string; clientName: string; clientEmail: string | null; amountCents: number | null; currency: string; renewalDate: Date; status: string; notes: string | null }, now: Date): ServiceRenewalDTO {
+  const daysLeft = daysUntil(r.renewalDate, now);
+  return { ...r, daysLeft, stage: r.status === "ACTIVE" ? serviceStage(daysLeft) : null };
+}
+
+export async function getServiceRenewals(workspaceId: string): Promise<ServiceRenewalDTO[]> {
+  const now = new Date();
+  const rows = await prisma.renewal.findMany({
+    where: { workspaceId, deletedAt: null },
+    orderBy: [{ renewalDate: "asc" }],
+  });
+  return rows.map((r) => toDTO(r, now));
+}
+
+function normalizeDate(d: string | Date): Date {
+  const parsed = new Date(d);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+export async function createServiceRenewal(workspaceId: string, createdById: string | null, input: ServiceRenewalInput) {
+  return prisma.renewal.create({
+    data: {
+      workspaceId,
+      createdById: createdById ?? undefined,
+      service: input.service.trim(),
+      clientName: input.clientName.trim(),
+      clientEmail: input.clientEmail?.trim() || null,
+      amountCents: input.amountCents ?? null,
+      currency: input.currency ?? "AED",
+      renewalDate: normalizeDate(input.renewalDate),
+      notes: input.notes?.trim() || null,
+    },
+  });
+}
+
+export async function updateServiceRenewal(workspaceId: string, id: string, patch: Partial<ServiceRenewalInput> & { status?: string }) {
+  const data: Record<string, unknown> = {};
+  if (patch.service !== undefined) data.service = patch.service.trim();
+  if (patch.clientName !== undefined) data.clientName = patch.clientName.trim();
+  if (patch.clientEmail !== undefined) data.clientEmail = patch.clientEmail?.trim() || null;
+  if (patch.amountCents !== undefined) data.amountCents = patch.amountCents ?? null;
+  if (patch.currency !== undefined) data.currency = patch.currency;
+  if (patch.renewalDate !== undefined) data.renewalDate = normalizeDate(patch.renewalDate);
+  if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
+  if (patch.status !== undefined) data.status = patch.status;
+  const result = await prisma.renewal.updateMany({ where: { id, workspaceId, deletedAt: null }, data });
+  return result.count;
+}
+
+// Mark a renewal paid/renewed: roll the date forward one year and reset the
+// reminder ladder (drop past notifications so next cycle fires cleanly).
+export async function markRenewed(workspaceId: string, id: string) {
+  const row = await prisma.renewal.findFirst({ where: { id, workspaceId, deletedAt: null } });
+  if (!row) return 0;
+  const next = new Date(row.renewalDate);
+  next.setFullYear(next.getFullYear() + 1);
+  await prisma.renewal.updateMany({ where: { id, workspaceId }, data: { renewalDate: next, status: "ACTIVE" } });
+  await prisma.notification.deleteMany({ where: { workspaceId, action: SERVICE_ACTION, targetId: id } });
+  return 1;
+}
+
+export async function deleteServiceRenewal(workspaceId: string, id: string) {
+  const result = await prisma.renewal.updateMany({ where: { id, workspaceId, deletedAt: null }, data: { deletedAt: new Date() } });
+  return result.count;
+}
+
+// Scan ACTIVE service renewals across all workspaces and notify owners/admins at
+// each stage (invoice/15d/7d/1d/overdue). Deduped per (renewal, stage).
+export async function runServiceRenewalReminders(now: Date = new Date()): Promise<RenewalScanResult> {
+  const workspaces = await prisma.workspace.findMany({ select: { id: true } });
+  let reminders = 0;
+
+  for (const { id: workspaceId } of workspaces) {
+    try {
+      const rows = await prisma.renewal.findMany({ where: { workspaceId, status: "ACTIVE", deletedAt: null } });
+      if (rows.length === 0) continue;
+
+      const recipients = await ownerAdminIds(workspaceId);
+      if (recipients.length === 0) continue;
+
+      for (const r of rows) {
+        const daysLeft = daysUntil(r.renewalDate, now);
+        const stage = serviceStage(daysLeft);
+        if (!stage) continue;
+        if (await alreadyReminded(workspaceId, SERVICE_ACTION, r.id, stage)) continue;
+        await createNotifications(systemActor(workspaceId), recipients, {
+          action: SERVICE_ACTION,
+          message: serviceRenewalMessage(r, daysLeft, stage),
+          targetType: "renewal",
+          targetId: r.id,
+          targetLabel: stage,
+        });
+        reminders += 1;
+      }
+    } catch (err) {
+      console.error(`runServiceRenewalReminders failed for workspace ${workspaceId}`, err);
     }
   }
 
