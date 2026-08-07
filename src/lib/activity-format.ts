@@ -61,6 +61,9 @@ export const ACTIONS = {
   "integration.credential_saved": { category: "business", verb: "saved API credential for" },
   "integration.credential_status_changed": { category: "business", verb: "changed API access for" },
   "integration.credential_tested": { category: "business", verb: "tested API connection for" },
+  "vault.credential_saved": { category: "business", verb: "saved a client credential for" },
+  "vault.credential_revealed": { category: "business", verb: "revealed a client credential for" },
+  "vault.credential_deleted": { category: "business", verb: "removed a client credential for" },
 } as const satisfies Record<string, ActionDef>;
 
 export type ActionKey = keyof typeof ACTIONS;

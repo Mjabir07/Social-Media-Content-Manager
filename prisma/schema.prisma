@@ -75,6 +75,38 @@ model Workspace {
   tasks               Task[]
   projects            Project[]
   renewals            Renewal[]
+  vaultCredentials    VaultCredential[]
+}
+
+// A client credential kept safely for future use (domain panel, email logins,
+// hosting/cPanel, social, …). The secret is AES-256-GCM encrypted at rest with
+// the app master key (same crypto as the API Vault); the browser only ever gets
+// a masked hint until an OWNER/ADMIN explicitly reveals it (audit-logged).
+// Grouped by free-text clientName — no Company record required.
+// category: DOMAIN | EMAIL | HOSTING | CPANEL | FTP | SOCIAL | OTHER
+model VaultCredential {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  renewalId      String? // optional link to a Renewal
+  clientName     String
+  category       String    @default("OTHER")
+  label          String // e.g. "GoDaddy domain panel" or "info@domain.com"
+  username       String? // login id / email — searchable, NOT the secret
+  url            String? // panel / login URL
+  encryptedValue String? // the encrypted secret (password / API key)
+  iv             String?
+  authTag        String?
+  keyVersion     Int       @default(1)
+  maskedHint     String? // e.g. "••••••••ab12" for display without decrypt
+  notes          String?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, clientName, deletedAt])
 }
 
 // A standalone service renewal you manage for a client (e.g. Google Workspace
