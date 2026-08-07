@@ -1,19 +1,19 @@
 import { z } from "zod";
 import { guard } from "@/lib/api-guard";
-import { deleteTask, updateTask } from "@/lib/tasks";
-import { TASK_STATUSES, TASK_PRIORITIES } from "@/lib/tasks-catalog";
+import { deleteProject, updateProject } from "@/lib/projects";
+import { PROJECT_STATUSES } from "@/lib/projects-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const patchSchema = z.object({
-  title: z.string().trim().min(1).max(200).optional(),
-  notes: z.string().trim().max(2000).optional().nullable(),
-  status: z.enum(TASK_STATUSES).optional(),
-  priority: z.enum(TASK_PRIORITIES).optional(),
-  dueDate: z.string().trim().optional().nullable(),
+  name: z.string().trim().min(2).max(120).optional(),
+  description: z.string().trim().max(2000).optional().nullable(),
+  status: z.enum(PROJECT_STATUSES).optional(),
   companyId: z.string().trim().optional().nullable(),
-  projectId: z.string().trim().optional().nullable(),
+  deadline: z.string().trim().optional().nullable(),
+  budgetCents: z.number().int().nonnegative().optional().nullable(),
+  currency: z.string().trim().length(3).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const parsed = patchSchema.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "Check the fields." }, { status: 400 });
-  const count = await updateTask(g.user.workspaceId, id, parsed.data);
+  const count = await updateProject(g.user.workspaceId, id, parsed.data);
   if (count === 0) return new Response("Not found", { status: 404 });
   return Response.json({ ok: true });
 }
@@ -31,7 +31,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const g = await guard("EDITOR");
   if (!g.ok) return g.response;
   const { id } = await params;
-  const count = await deleteTask(g.user.workspaceId, id);
+  const count = await deleteProject(g.user.workspaceId, id);
   if (count === 0) return new Response("Not found", { status: 404 });
   return Response.json({ ok: true });
 }

@@ -7,11 +7,13 @@ import { isTaskPriority, isTaskStatus, type TaskPriority, type TaskStatus } from
  */
 export * from "@/lib/tasks-catalog";
 
-export async function getTasks(workspaceId: string, companyId?: string) {
+export async function getTasks(workspaceId: string, opts?: { companyId?: string; projectId?: string }) {
+  const { companyId, projectId } = opts ?? {};
   return prisma.task.findMany({
     where: {
       workspaceId,
       deletedAt: null,
+      ...(projectId !== undefined ? { projectId } : {}),
       ...(companyId !== undefined ? { OR: [{ companyId }, { companyId: null }] } : {}),
     },
     orderBy: [{ createdAt: "desc" }],
@@ -25,6 +27,7 @@ export type TaskInput = {
   priority?: TaskPriority;
   dueDate?: string | Date | null;
   companyId?: string | null;
+  projectId?: string | null;
 };
 
 function normalizeDue(due: string | Date | null | undefined): Date | null {
@@ -40,6 +43,7 @@ export async function createTask(workspaceId: string, createdById: string | null
       workspaceId,
       createdById: createdById ?? undefined,
       companyId: input.companyId ?? null,
+      projectId: input.projectId ?? null,
       title: input.title.trim(),
       notes: input.notes?.trim() || null,
       status,
@@ -60,6 +64,7 @@ export async function updateTask(workspaceId: string, id: string, patch: TaskPat
   if (patch.priority !== undefined && isTaskPriority(patch.priority)) data.priority = patch.priority;
   if (patch.dueDate !== undefined) data.dueDate = normalizeDue(patch.dueDate);
   if (patch.companyId !== undefined) data.companyId = patch.companyId ?? null;
+  if (patch.projectId !== undefined) data.projectId = patch.projectId ?? null;
   if (patch.status !== undefined && isTaskStatus(patch.status)) {
     data.status = patch.status;
     data.completedAt = patch.status === "DONE" ? new Date() : null;

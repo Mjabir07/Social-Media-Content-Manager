@@ -13,12 +13,14 @@ const createSchema = z.object({
   priority: z.enum(TASK_PRIORITIES).optional(),
   dueDate: z.string().trim().optional().nullable(),
   companyId: z.string().trim().optional().nullable(),
+  projectId: z.string().trim().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const g = await guard();
   if (!g.ok) return g.response;
-  const tasks = await getTasks(g.user.workspaceId);
+  const projectId = new URL(req.url).searchParams.get("projectId") || undefined;
+  const tasks = await getTasks(g.user.workspaceId, projectId ? { projectId } : undefined);
   return Response.json({ tasks });
 }
 

@@ -73,6 +73,34 @@ model Workspace {
   pulseSubscriptions  PulseSubscription[]
   coolifyConnections  CoolifyConnection[]
   tasks               Task[]
+  projects            Project[]
+}
+
+// A client/internal project. Workspace-scoped, optionally tied to a Company
+// (client). Tasks belong to 0-or-1 project; progress = done/total of its tasks.
+// status: PLANNING | ACTIVE | ON_HOLD | DONE. Soft-deleted (deletedAt).
+model Project {
+  id          String    @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  createdById String?
+  ownerId     String?
+  name        String
+  description String?
+  status      String    @default("ACTIVE")
+  deadline    DateTime?
+  budgetCents Int?
+  currency    String    @default("AED")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  tasks     Task[]
+
+  @@index([workspaceId, status, deletedAt])
 }
 
 // A personal / team to-do item. Workspace-scoped. status: TODO | PENDING | DONE
@@ -82,6 +110,7 @@ model Task {
   id          String    @id @default(cuid())
   workspaceId String
   companyId   String?
+  projectId   String?
   createdById String?
   assigneeId  String?
   title       String
@@ -97,8 +126,10 @@ model Task {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, status, deletedAt])
+  @@index([projectId])
 }
 
 // A live connection to a self-hosted Coolify instance (your VPS). The API token
@@ -185,6 +216,7 @@ model Company {
   emailServiceRecords EmailServiceRecord[]
   pulseSubscriptions  PulseSubscription[]
   tasks               Task[]
+  projects            Project[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])

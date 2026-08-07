@@ -38,12 +38,16 @@ export function TasksView({
   userName,
   userEmail,
   userRole,
+  projectId,
+  embedded = false,
 }: {
   initialTasks: TaskDTO[];
   canManage: boolean;
   userName: string;
   userEmail: string;
   userRole: string;
+  projectId?: string;
+  embedded?: boolean;
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [title, setTitle] = useState("");
@@ -58,7 +62,7 @@ export function TasksView({
   const stats = useMemo(() => taskStats(tasks), [tasks]);
 
   async function refresh() {
-    const res = await fetch("/api/tasks", { cache: "no-store" });
+    const res = await fetch(`/api/tasks${projectId ? `?projectId=${projectId}` : ""}`, { cache: "no-store" });
     if (res.ok) setTasks((await res.json()).tasks ?? []);
   }
 
@@ -69,7 +73,7 @@ export function TasksView({
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, priority, dueDate: dueDate || null, notes: notes || null }),
+      body: JSON.stringify({ title, priority, dueDate: dueDate || null, notes: notes || null, projectId: projectId ?? null }),
     });
     setSaving(false);
     if (res.ok) {
@@ -96,37 +100,10 @@ export function TasksView({
 
   const inputCls = "rounded-xl border border-[#B8CCE0] bg-white px-3.5 py-2.5 text-sm text-[#0f2137] outline-none placeholder:text-[#93A9BF] focus:border-[#087CFA]";
 
-  return (
-    <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
-      <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <Link href="/azmin" className="flex items-center gap-3">
-            <span className="relative h-10 w-10 shrink-0">
-              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
-            </span>
-            <span>
-              <strong className="block font-display text-[15px] font-bold">AZMIN Digital OS</strong>
-              <span className="mt-0.5 block text-[11px] font-extrabold uppercase tracking-[.17em] text-[#456784]">Tasks</span>
-            </span>
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <Link href="/azmin" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Command center</Link>
-            <AzminProfileMenu name={userName} email={userEmail} role={userRole} />
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-8 sm:pt-8">
-        <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Daily to-do</p>
-          <h1 className="mt-1 flex items-center gap-3 font-display text-3xl font-bold tracking-[-.03em]">
-            <CheckSquare className="text-[#087CFA]" size={28} /> Tasks & tracking
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Capture what to do, park what is pending, finish each one. Move cards forward as work progresses.</p>
-        </div>
-
+  const board = (
+    <>
         {/* Stat strip */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-3 sm:grid-cols-4 ${embedded ? "" : "mt-6"}`}>
           <Stat label="To do" value={stats.todo} tone="#0758C9" />
           <Stat label="Pending" value={stats.pending} tone="#9A6711" />
           <Stat label="Done" value={stats.done} tone="#087B54" />
@@ -218,6 +195,41 @@ export function TasksView({
             </section>
           ))}
         </div>
+    </>
+  );
+
+  if (embedded) return board;
+
+  return (
+    <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
+      <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <Link href="/azmin" className="flex items-center gap-3">
+            <span className="relative h-10 w-10 shrink-0">
+              <Image src="/brand/azmin-c1-mark.png" alt="AZMIN" fill priority sizes="40px" className="object-contain" />
+            </span>
+            <span>
+              <strong className="block font-display text-[15px] font-bold">AZMIN Digital OS</strong>
+              <span className="mt-0.5 block text-[11px] font-extrabold uppercase tracking-[.17em] text-[#456784]">Tasks</span>
+            </span>
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Link href="/azmin/projects" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Projects</Link>
+            <Link href="/azmin" className="hidden rounded-xl border border-[#B8CCE0] bg-[#F8FBFF] px-4 py-2.5 text-xs font-bold text-[#234B70] hover:border-[#087CFA] sm:block">Command center</Link>
+            <AzminProfileMenu name={userName} email={userEmail} role={userRole} />
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-8 sm:pt-8">
+        <div className="mb-6">
+          <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Daily to-do</p>
+          <h1 className="mt-1 flex items-center gap-3 font-display text-3xl font-bold tracking-[-.03em]">
+            <CheckSquare className="text-[#087CFA]" size={28} /> Tasks & tracking
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Capture what to do, park what is pending, finish each one. Move cards forward as work progresses.</p>
+        </div>
+        {board}
       </div>
     </main>
   );
