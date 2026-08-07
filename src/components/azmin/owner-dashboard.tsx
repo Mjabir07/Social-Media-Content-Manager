@@ -51,6 +51,7 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
               <NavItem icon="companies" label="Companies" badge="Live" href="/azmin/companies" />
               <NavItem icon="bell" label="Inbox" href="/azmin/inbox" />
               <NavItem icon="sales" label="Leads & sales" href="/azmin/leads" />
+              <NavItem icon="tasks" label="Tasks" href="/azmin/tasks" />
               <NavItem icon="companies" label="Partners" href="/azmin/partners" />
               <NavItem icon="projects" label="Projects" badge="Soon" />
               <NavItem icon="services" label="Services" href="/azmin/services" />
@@ -329,9 +330,9 @@ function Empty({ text, action }: { text: string; action: string }) { return <div
 function roleLabel(role: string) { return role.charAt(0) + role.slice(1).toLowerCase(); }
 function formatDate(value: string) { return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
 
-type GlyphName = "integrations" | "home" | "companies" | "sales" | "projects" | "services" | "finance" | "marketing" | "development" | "infrastructure" | "agents" | "bell" | "spark" | "assets" | "alert" | "calendar" | "trend";
+type GlyphName = "integrations" | "home" | "companies" | "sales" | "projects" | "services" | "finance" | "marketing" | "development" | "infrastructure" | "agents" | "bell" | "spark" | "assets" | "alert" | "calendar" | "trend" | "tasks";
 const paths: Record<GlyphName, string> = {
-  integrations: "M8 12h8m-4-4v8M5 4h14v16H5z", home: "M3 10.5 12 3l9 7.5M5.5 9.5V21h13V9.5M9 21v-7h6v7", companies: "M4 21V7l8-4v18M12 9h8v12M7 10h2m-2 4h2m-2 4h2m8-5h1m-1 4h1", sales: "M4 18V8m0 10h16M7 14l3-3 3 2 5-6m0 0h-4m4 0v4", projects: "M4 6h6l2 2h8v11H4z", services: "M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z", finance: "M4 7h16v12H4zM4 10h16M8 15h3", marketing: "M4 13V8l12-4v13L4 13Zm0 0 2 6h4l-2-5", development: "m8 9-4 3 4 3m8-6 4 3-4 3m-2-9-4 12", infrastructure: "M5 5h14v5H5zM5 14h14v5H5zM8 7.5h.01M8 16.5h.01", agents: "M12 3v3m-6 5H3m18 0h-3m-6 7v3M7 8h10v9H7zM10 12h.01M14 12h.01", bell: "M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7m4 10h4", spark: "m12 3 1.2 4.2L17 9l-3.8 1.8L12 15l-1.2-4.2L7 9l3.8-1.8L12 3Z", assets: "M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5", alert: "M12 4 3 20h18L12 4Zm0 5v5m0 3h.01", calendar: "M5 5h14v15H5zM8 3v4m8-4v4M5 9h14", trend: "M4 17l5-5 4 3 7-8m0 0h-5m5 0v5",
+  integrations: "M8 12h8m-4-4v8M5 4h14v16H5z", home: "M3 10.5 12 3l9 7.5M5.5 9.5V21h13V9.5M9 21v-7h6v7", companies: "M4 21V7l8-4v18M12 9h8v12M7 10h2m-2 4h2m-2 4h2m8-5h1m-1 4h1", sales: "M4 18V8m0 10h16M7 14l3-3 3 2 5-6m0 0h-4m4 0v4", projects: "M4 6h6l2 2h8v11H4z", services: "M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z", finance: "M4 7h16v12H4zM4 10h16M8 15h3", marketing: "M4 13V8l12-4v13L4 13Zm0 0 2 6h4l-2-5", development: "m8 9-4 3 4 3m8-6 4 3-4 3m-2-9-4 12", infrastructure: "M5 5h14v5H5zM5 14h14v5H5zM8 7.5h.01M8 16.5h.01", agents: "M12 3v3m-6 5H3m18 0h-3m-6 7v3M7 8h10v9H7zM10 12h.01M14 12h.01", bell: "M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7m4 10h4", spark: "m12 3 1.2 4.2L17 9l-3.8 1.8L12 15l-1.2-4.2L7 9l3.8-1.8L12 3Z", assets: "M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5", alert: "M12 4 3 20h18L12 4Zm0 5v5m0 3h.01", calendar: "M5 5h14v15H5zM8 3v4m8-4v4M5 9h14", trend: "M4 17l5-5 4 3 7-8m0 0h-5m5 0v5", tasks: "M4 6h5m-5 6h5m-5 6h5m4-13 2 2 4-4m-6 8 2 2 4-4",
 };
 function Glyph({ name }: { name: GlyphName }) { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d={paths[name]} /></svg>; }
 

@@ -72,6 +72,33 @@ model Workspace {
   emailServiceRecords EmailServiceRecord[]
   pulseSubscriptions  PulseSubscription[]
   coolifyConnections  CoolifyConnection[]
+  tasks               Task[]
+}
+
+// A personal / team to-do item. Workspace-scoped. status: TODO | PENDING | DONE
+// (PENDING = waiting on someone/something). priority: LOW | MEDIUM | HIGH.
+// Soft-deleted (deletedAt) per the data-safety rule.
+model Task {
+  id          String    @id @default(cuid())
+  workspaceId String
+  companyId   String?
+  createdById String?
+  assigneeId  String?
+  title       String
+  notes       String?
+  status      String    @default("TODO")
+  priority    String    @default("MEDIUM")
+  dueDate     DateTime?
+  order       Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status, deletedAt])
 }
 
 // A live connection to a self-hosted Coolify instance (your VPS). The API token
@@ -157,6 +184,7 @@ model Company {
   hostingRecords      HostingRecord[]
   emailServiceRecords EmailServiceRecord[]
   pulseSubscriptions  PulseSubscription[]
+  tasks               Task[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
