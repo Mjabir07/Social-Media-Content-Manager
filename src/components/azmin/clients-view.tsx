@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Users, Plus, Loader2, X, AlertTriangle, KeyRound, CalendarClock, ArrowRight } from "lucide-react";
+import { Users, Plus, Loader2, X, AlertTriangle, KeyRound, CalendarClock, ArrowRight, Search, Globe } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 
 export type ClientCardDTO = {
   id: string;
   name: string;
+  domain: string | null;
   contactName: string | null;
   email: string | null;
   phone: string | null;
@@ -33,13 +34,20 @@ export function ClientsView({
   userRole: string;
 }) {
   const [clients, setClients] = useState(initialClients);
+  const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
+  const [domain, setDomain] = useState("");
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? clients.filter((c) => [c.name, c.domain, c.contactName, c.email].some((f) => f?.toLowerCase().includes(q)))
+    : clients;
 
   async function refresh() {
     const res = await fetch("/api/clients", { cache: "no-store" });
@@ -53,14 +61,14 @@ export function ClientsView({
     const res = await fetch("/api/clients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, contactName: contactName || null, email: email || null, phone: phone || null }),
+      body: JSON.stringify({ name, domain: domain || null, contactName: contactName || null, email: email || null, phone: phone || null }),
     });
     setSaving(false);
     if (!res.ok) {
       setError((await res.json().catch(() => ({}))).error ?? "Could not create client.");
       return;
     }
-    setName(""); setContactName(""); setEmail(""); setPhone(""); setShowForm(false);
+    setName(""); setDomain(""); setContactName(""); setEmail(""); setPhone(""); setShowForm(false);
     await refresh();
   }
 
@@ -104,9 +112,13 @@ export function ClientsView({
 
         {showForm && (
           <form onSubmit={handleCreate} className="mt-6 grid gap-3 rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-[0_10px_28px_rgba(3,20,46,.05)] sm:grid-cols-2">
-            <label className="text-xs font-bold text-[#476987] sm:col-span-2">
+            <label className="text-xs font-bold text-[#476987]">
               Client name
               <input className={`mt-1 ${inputCls}`} value={name} onChange={(e) => setName(e.target.value)} placeholder="Client / business name" required minLength={2} />
+            </label>
+            <label className="text-xs font-bold text-[#476987]">
+              Domain <span className="font-normal text-[#93A9BF]">(searchable)</span>
+              <input className={`mt-1 ${inputCls}`} value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="clientdomain.com" />
             </label>
             <label className="text-xs font-bold text-[#476987]">
               Contact person
@@ -132,16 +144,26 @@ export function ClientsView({
           </form>
         )}
 
-        <div className="mt-8">
+        {clients.length > 0 && (
+          <div className="mt-6 flex items-center gap-2 rounded-xl border border-[#B8CCE0] bg-white px-3.5 py-2.5 shadow-[0_1px_6px_rgba(3,20,46,.04)]">
+            <Search size={16} className="text-[#8299AE]" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or domain…" className="w-full bg-transparent text-sm text-[#0f2137] outline-none placeholder:text-[#93A9BF]" />
+            {query && <button onClick={() => setQuery("")} className="text-[#8299AE] hover:text-[#087CFA]"><X size={15} /></button>}
+          </div>
+        )}
+
+        <div className="mt-4">
           {clients.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#AFC6DE] bg-[#F5F9FE] px-5 py-12 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF9FF] text-[#087CFA]"><Users size={30} /></div>
               <h3 className="mt-4 text-base font-bold text-[#173A5C]">No clients yet</h3>
               <p className="mt-1 text-sm text-[#526F8A]">{canManage ? "Add your first client, then open it to store credentials and renewals." : "Ask an editor to add clients."}</p>
             </div>
+          ) : shown.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-[#AFC6DE] bg-[#F5F9FE] px-5 py-10 text-center text-sm text-[#526F8A]">No client matches “{query}”.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {clients.map((c) => {
+              {shown.map((c) => {
                 const initials = c.name.slice(0, 2).toUpperCase();
                 const dl = c.nextRenewalDaysLeft;
                 return (
@@ -150,7 +172,9 @@ export function ClientsView({
                       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#EAF1F9] font-black text-[#234B70]">{initials}</span>
                       <div className="min-w-0">
                         <h3 className="truncate font-bold text-[#173A5C]">{c.name}</h3>
-                        <p className="truncate text-xs font-semibold text-[#526F8A]">{c.contactName || c.email || "—"}</p>
+                        {c.domain
+                          ? <p className="flex items-center gap-1 truncate text-xs font-bold text-[#0758C9]"><Globe size={11} /> {c.domain}</p>
+                          : <p className="truncate text-xs font-semibold text-[#526F8A]">{c.contactName || c.email || "—"}</p>}
                       </div>
                       {c.status === "INACTIVE" && <span className="ml-auto rounded-full bg-[#EEF3F8] px-2 py-0.5 text-[10px] font-bold uppercase text-[#5B7690]">Inactive</span>}
                     </div>

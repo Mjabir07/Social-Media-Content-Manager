@@ -28,6 +28,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       client={{
         id: client.id,
         name: client.name,
+        domain: client.domain,
         contactName: client.contactName,
         email: client.email,
         phone: client.phone,

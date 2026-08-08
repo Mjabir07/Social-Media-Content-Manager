@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Users, ArrowLeft, Mail, Phone, Trash2, Loader2, KeyRound, CalendarClock, Wallet } from "lucide-react";
+import { Users, ArrowLeft, Mail, Phone, Trash2, Loader2, KeyRound, CalendarClock, Wallet, Globe } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { VaultView, type VaultCredentialDTO } from "@/components/azmin/vault-view";
 import { RenewalsView, type ServiceRenewalDTO } from "@/components/azmin/renewals-view";
@@ -13,6 +13,7 @@ import { FinanceView, type TransactionDTO } from "@/components/azmin/finance-vie
 export type ClientDetail = {
   id: string;
   name: string;
+  domain: string | null;
   contactName: string | null;
   email: string | null;
   phone: string | null;
@@ -95,6 +96,7 @@ export function ClientDetailView({
                   {client.status === "INACTIVE" && <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-[10px] font-bold uppercase text-[#5B7690]">Inactive</span>}
                 </h1>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-[#526F8A]">
+                  {client.domain && <a href={`https://${client.domain}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 font-bold text-[#0758C9] hover:underline"><Globe size={12} /> {client.domain}</a>}
                   {client.contactName && <span>{client.contactName}</span>}
                   {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1 text-[#0758C9] hover:underline"><Mail size={12} /> {client.email}</a>}
                   {client.phone && <span className="flex items-center gap-1"><Phone size={12} /> {client.phone}</span>}

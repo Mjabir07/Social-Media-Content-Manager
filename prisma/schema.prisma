@@ -119,6 +119,7 @@ model Client {
   id          String    @id @default(cuid())
   workspaceId String
   name        String
+  domain      String? // primary domain — you often recall a client by this
   contactName String?
   email       String?
   phone       String?
