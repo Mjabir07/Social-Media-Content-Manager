@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { guard } from "@/lib/api-guard";
-import { deleteServiceRenewal, markRenewed, updateServiceRenewal } from "@/lib/renewals";
+import {
+  deleteServiceRenewal,
+  markRenewed,
+  updateServiceRenewal,
+  raiseInvoice,
+  markInvoiceSent,
+  markPaymentReceived,
+} from "@/lib/renewals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +23,7 @@ const patchSchema = z.object({
   renewalDate: z.string().trim().min(4).optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
   status: z.enum(["ACTIVE", "RENEWED", "CANCELLED"]).optional(),
-  action: z.literal("markRenewed").optional(),
+  action: z.enum(["markRenewed", "raiseInvoice", "markSent", "markPaid"]).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,14 +33,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const parsed = patchSchema.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "Check the fields." }, { status: 400 });
 
-  if (parsed.data.action === "markRenewed") {
+  const { action, ...patch } = parsed.data;
+
+  if (action === "raiseInvoice") {
+    const res = await raiseInvoice(g.user.workspaceId, id, g.user.id);
+    if (!res.ok) return Response.json({ error: res.error }, { status: res.error === "Not found" ? 404 : 400 });
+    return Response.json({ ok: true });
+  }
+  if (action === "markSent") {
+    const count = await markInvoiceSent(g.user.workspaceId, id);
+    if (count === 0) return new Response("Not found", { status: 404 });
+    return Response.json({ ok: true });
+  }
+  if (action === "markPaid") {
+    const count = await markPaymentReceived(g.user.workspaceId, id, g.user.id, patch.renewalDate);
+    if (count === 0) return new Response("Not found", { status: 404 });
+    return Response.json({ ok: true });
+  }
+  if (action === "markRenewed") {
     const count = await markRenewed(g.user.workspaceId, id, g.user.id);
     if (count === 0) return new Response("Not found", { status: 404 });
     return Response.json({ ok: true });
   }
-
-  const { action: _action, ...patch } = parsed.data;
-  void _action;
   const count = await updateServiceRenewal(g.user.workspaceId, id, patch);
   if (count === 0) return new Response("Not found", { status: 404 });
   return Response.json({ ok: true });

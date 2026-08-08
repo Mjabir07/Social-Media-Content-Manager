@@ -76,6 +76,51 @@ export function formatAmount(amountCents: number | null | undefined, currency = 
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amountCents / 100);
 }
 
+// ---------------------------------------------------------------------------
+// Billing lifecycle (per renewal cycle). NONE -> RAISED (invoice created, income
+// booked PENDING) -> SENT (emailed). Marking payment received closes the cycle:
+// the date rolls +1yr and status resets to NONE. Pure + testable.
+// ---------------------------------------------------------------------------
+
+export const INVOICE_STATUSES = ["NONE", "RAISED", "SENT"] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+
+export const invoiceStatusMeta: Record<InvoiceStatus, { label: string; color: string; bg: string }> = {
+  NONE: { label: "Not invoiced", color: "#5A7189", bg: "#EDF1F6" },
+  RAISED: { label: "Invoiced · unpaid", color: "#9A6711", bg: "#FFF1D5" },
+  SENT: { label: "Invoice sent", color: "#0758C9", bg: "#E7F0FD" },
+};
+
+export function isInvoiceStatus(v: unknown): v is InvoiceStatus {
+  return typeof v === "string" && (INVOICE_STATUSES as readonly string[]).includes(v);
+}
+
+// Which lifecycle actions are offered next for a given invoice status. Drives
+// the row buttons so UI and server agree on the state machine.
+export type RenewalAction = "raiseInvoice" | "markSent" | "markPaid";
+
+export function nextRenewalActions(invoiceStatus: InvoiceStatus): RenewalAction[] {
+  switch (invoiceStatus) {
+    case "NONE":
+      return ["raiseInvoice"];
+    case "RAISED":
+      return ["markSent", "markPaid"];
+    case "SENT":
+      return ["markPaid"];
+  }
+}
+
+// Roll a date forward by whole years (default 1). Handles Feb-29 by clamping to
+// Feb-28 in non-leap target years (setUTCFullYear would overflow to Mar-01).
+export function advanceYears(date: Date | string, years = 1): Date {
+  const d = new Date(date);
+  const day = d.getUTCDate();
+  const next = new Date(d);
+  next.setUTCFullYear(next.getUTCFullYear() + years);
+  if (next.getUTCDate() !== day) next.setUTCDate(0); // overflowed → last day of prev month
+  return next;
+}
+
 export type ServiceRenewalLike = {
   service: string;
   clientName: string;

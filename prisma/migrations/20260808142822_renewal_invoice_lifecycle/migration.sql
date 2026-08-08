@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Renewal" ADD COLUMN "invoiceStatus" TEXT NOT NULL DEFAULT 'NONE';
+ALTER TABLE "Renewal" ADD COLUMN "invoicedAt" TIMESTAMP(3);
+ALTER TABLE "Renewal" ADD COLUMN "paidAt" TIMESTAMP(3);
+ALTER TABLE "Renewal" ADD COLUMN "incomeTxnId" TEXT;

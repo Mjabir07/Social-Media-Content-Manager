@@ -65,3 +65,47 @@ describe("renewalMessage", () => {
     expect(renewalMessage({ kind: "domain", id: "d", label: "x.dev", companyName: "Acme", expiryDate: inDays(3), daysLeft: 3, bucket: "7d" })).toContain("(Acme)");
   });
 });
+
+import {
+  advanceYears,
+  nextRenewalActions,
+  isInvoiceStatus,
+  invoiceStatusMeta,
+} from "@/lib/renewals-core";
+
+describe("advanceYears", () => {
+  it("rolls forward one year by default", () => {
+    expect(advanceYears(new Date(Date.UTC(2026, 7, 5))).toISOString().slice(0, 10)).toBe("2027-08-05");
+  });
+  it("accepts an explicit year count", () => {
+    expect(advanceYears(new Date(Date.UTC(2026, 0, 15)), 2).toISOString().slice(0, 10)).toBe("2028-01-15");
+  });
+  it("clamps Feb-29 to Feb-28 in a non-leap target year", () => {
+    expect(advanceYears(new Date(Date.UTC(2028, 1, 29))).toISOString().slice(0, 10)).toBe("2029-02-28");
+  });
+});
+
+describe("nextRenewalActions", () => {
+  it("offers raise invoice from NONE", () => {
+    expect(nextRenewalActions("NONE")).toEqual(["raiseInvoice"]);
+  });
+  it("offers mark sent + mark paid from RAISED", () => {
+    expect(nextRenewalActions("RAISED")).toEqual(["markSent", "markPaid"]);
+  });
+  it("offers only mark paid from SENT", () => {
+    expect(nextRenewalActions("SENT")).toEqual(["markPaid"]);
+  });
+});
+
+describe("isInvoiceStatus", () => {
+  it("validates the known lifecycle states", () => {
+    expect(isInvoiceStatus("RAISED")).toBe(true);
+    expect(isInvoiceStatus("PAID")).toBe(false);
+    expect(isInvoiceStatus(null)).toBe(false);
+  });
+  it("has meta for every status", () => {
+    for (const s of ["NONE", "RAISED", "SENT"] as const) {
+      expect(invoiceStatusMeta[s].label.length).toBeGreaterThan(0);
+    }
+  });
+});

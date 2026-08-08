@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { CalendarClock, Plus, Loader2, X, AlertTriangle, CheckCircle2, FileText, RefreshCw, Trash2, Copy, Check, Mail } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
-import { formatAmount, buildInvoiceEmail, type ServiceStage } from "@/lib/renewals-core";
+import { formatAmount, buildInvoiceEmail, invoiceStatusMeta, nextRenewalActions, type ServiceStage, type InvoiceStatus } from "@/lib/renewals-core";
 
 export type ServiceRenewalDTO = {
   id: string;
@@ -19,6 +19,9 @@ export type ServiceRenewalDTO = {
   currency: string;
   renewalDate: string;
   status: string;
+  invoiceStatus: InvoiceStatus;
+  invoicedAt: string | null;
+  paidAt: string | null;
   notes: string | null;
   daysLeft: number;
   stage: ServiceStage | null;
@@ -104,11 +107,32 @@ export function RenewalsView({
     await refresh();
   }
 
-  async function markRenewed(id: string) {
+  async function runAction(id: string, action: "raiseInvoice" | "markSent" | "markPaid") {
     setBusyId(id);
-    await fetch(`/api/renewals/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "markRenewed" }) });
+    setError(null);
+    const res = await fetch(`/api/renewals/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
     setBusyId(null);
+    if (!res.ok) {
+      setError((await res.json().catch(() => ({}))).error ?? "Action failed.");
+      return false;
+    }
     await refresh();
+    return true;
+  }
+
+  // Raise the invoice, then pop the pre-filled email so you can send it.
+  async function raiseAndDraft(r: ServiceRenewalDTO) {
+    const ok = await runAction(r.id, "raiseInvoice");
+    if (ok) openDraft(r);
+  }
+
+  async function markPaid(id: string) {
+    if (!confirm("Mark payment received? This books the income as paid and rolls the renewal date forward one year.")) return;
+    await runAction(id, "markPaid");
   }
 
   async function remove(id: string) {
@@ -140,6 +164,12 @@ export function RenewalsView({
           <span className="text-[#C8D8EA]">→</span>
           <Ladder color="#B4231C" bg="#FDECEC" text="−1d · Final" />
         </div>
+
+        {error && !showForm && (
+          <p className="mt-4 flex items-center gap-2 rounded-xl border border-[#F0C9C4] bg-[#FDECEC] px-4 py-3 text-xs font-bold text-[#B4231C]">
+            <AlertTriangle size={14} /> {error}
+          </p>
+        )}
 
         {showForm && (
           <form onSubmit={handleCreate} className="mt-6 grid gap-3 rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-[0_10px_28px_rgba(3,20,46,.05)] sm:grid-cols-2">
@@ -216,6 +246,7 @@ export function RenewalsView({
                         <span className="text-[#8299AE]">·</span>
                         <span className="font-semibold text-[#456784]">{r.clientName}</span>
                         {stage && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: STAGE_META[stage].color, background: STAGE_META[stage].bg }}>{STAGE_META[stage].label}</span>}
+                        {r.invoiceStatus !== "NONE" && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: invoiceStatusMeta[r.invoiceStatus].color, background: invoiceStatusMeta[r.invoiceStatus].bg }}>{invoiceStatusMeta[r.invoiceStatus].label}</span>}
                         {done && <span className="rounded-full bg-[#E7F8EF] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#087B54]">{r.status}</span>}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-3 text-xs font-semibold text-[#526F8A]">
@@ -232,19 +263,37 @@ export function RenewalsView({
                       </div>
                       {r.notes && <p className="mt-1 text-xs text-[#7C93A8]">{r.notes}</p>}
                     </div>
-                    {canManage && (
-                      <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        <button onClick={() => openDraft(r)} title="Pre-fill the renewal invoice email" className="inline-flex items-center gap-1.5 rounded-lg border border-[#D8C9F2] bg-[#F7F1FE] px-3 py-2 text-xs font-bold text-[#5C3AAE] transition hover:border-[#5C3AAE]">
-                          <FileText size={13} /> Draft invoice
-                        </button>
-                        <button onClick={() => markRenewed(r.id)} disabled={busyId === r.id} title="Renew +1 year and auto-log income/expense to Finance" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
-                          {busyId === r.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Mark renewed
-                        </button>
-                        <button onClick={() => remove(r.id)} disabled={busyId === r.id} className="inline-flex items-center gap-1.5 rounded-lg border border-[#F0C9C4] bg-white px-3 py-2 text-xs font-bold text-[#C0362C] transition hover:bg-[#FDECEC] disabled:opacity-60">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    )}
+                    {canManage && (() => {
+                      const actions = nextRenewalActions(r.invoiceStatus);
+                      const busy = busyId === r.id;
+                      return (
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          {actions.includes("raiseInvoice") && (
+                            <button onClick={() => raiseAndDraft(r)} disabled={busy} title="Book the client charge as unpaid income and open the invoice email" className="inline-flex items-center gap-1.5 rounded-lg bg-[#5C3AAE] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#4C2F92] disabled:opacity-60">
+                              {busy ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />} Raise invoice
+                            </button>
+                          )}
+                          {r.invoiceStatus !== "NONE" && (
+                            <button onClick={() => openDraft(r)} title="Re-open the invoice email" className="inline-flex items-center gap-1.5 rounded-lg border border-[#D8C9F2] bg-[#F7F1FE] px-3 py-2 text-xs font-bold text-[#5C3AAE] transition hover:border-[#5C3AAE]">
+                              <Mail size={13} /> Email
+                            </button>
+                          )}
+                          {actions.includes("markSent") && (
+                            <button onClick={() => runAction(r.id, "markSent")} disabled={busy} title="Mark the invoice as sent to the client" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#0758C9] transition hover:border-[#087CFA] disabled:opacity-60">
+                              {busy ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />} Mark sent
+                            </button>
+                          )}
+                          {actions.includes("markPaid") && (
+                            <button onClick={() => markPaid(r.id)} disabled={busy} title="Payment received — book income as paid and roll the date +1 year" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
+                              {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Mark paid
+                            </button>
+                          )}
+                          <button onClick={() => remove(r.id)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg border border-[#F0C9C4] bg-white px-3 py-2 text-xs font-bold text-[#C0362C] transition hover:bg-[#FDECEC] disabled:opacity-60">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </li>
                 );
               })}

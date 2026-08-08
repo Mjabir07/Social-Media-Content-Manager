@@ -190,6 +190,13 @@ model Renewal {
   currency    String    @default("AED")
   renewalDate DateTime
   status      String    @default("ACTIVE")
+  // Billing lifecycle within the current cycle: NONE (nothing raised) -> RAISED
+  // (invoice created, income booked PENDING) -> SENT (emailed to client) ->
+  // payment received resets it to NONE and rolls renewalDate +1yr.
+  invoiceStatus String   @default("NONE") // NONE | RAISED | SENT
+  invoicedAt    DateTime? // when the invoice was raised this cycle
+  paidAt        DateTime? // when the last cycle's payment was received
+  incomeTxnId   String?   // the income Transaction booked for the open invoice
   notes       String?
   createdById String?
   createdAt   DateTime  @default(now())
