@@ -78,6 +78,7 @@ model Workspace {
   vaultCredentials    VaultCredential[]
   clients             Client[]
   transactions        Transaction[]
+  devProjects         DevProject[]
 }
 
 // A money movement — the finance ledger. type INCOME (client charges) or
@@ -343,6 +344,7 @@ model Company {
   pulseSubscriptions  PulseSubscription[]
   tasks               Task[]
   projects            Project[]
+  devProjects         DevProject[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -946,4 +948,49 @@ model PulseSubscription {
   company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, companyId])
+}
+
+// Phase 5 — Development Studio. A DevProject is a build/software effort for a
+// company (or internal). Repositories hang off it; branch tracking is a JSON
+// string[] on the repository (see dev-studio-catalog). Soft-deleted.
+model DevProject {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  companyId     String?
+  createdById   String?
+  name          String
+  description   String?
+  status        String    @default("ACTIVE") // PLANNING | ACTIVE | MAINTENANCE | ARCHIVED
+  productionUrl String?
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company      Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  repositories Repository[]
+
+  @@index([workspaceId, companyId])
+  @@index([workspaceId, status])
+}
+
+// A source repository tracked under a DevProject. defaultBranch is the primary
+// branch; branches is a JSON string[] of extra tracked branch names.
+model Repository {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  devProjectId  String
+  provider      String   @default("github") // github | gitlab | bitbucket | other
+  fullName      String // owner/repo
+  url           String
+  defaultBranch String   @default("main")
+  branches      String   @default("[]") // JSON string[]
+  visibility    String   @default("private") // private | public
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  devProject DevProject @relation(fields: [devProjectId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, devProjectId])
 }

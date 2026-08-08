@@ -65,7 +65,7 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
             <p className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#91AEC2]">Workspaces</p>
             <nav className="mt-2 space-y-1.5">
               <NavItem icon="marketing" label="Marketing studio" href="/azmin" />
-              <NavItem icon="development" label="Development studio" badge="Soon" />
+              <NavItem icon="development" label="Development studio" href="/azmin/development" badge="New" />
               <NavItem icon="infrastructure" label="Infrastructure" href="/azmin/infrastructure" />
               <NavItem icon="calendar" label="Renewals" href="/azmin/renewals" />
               <NavItem icon="integrations" label="Client Vault" href="/azmin/vault" />
