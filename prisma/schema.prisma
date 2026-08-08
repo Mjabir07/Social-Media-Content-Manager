@@ -77,6 +77,38 @@ model Workspace {
   renewals            Renewal[]
   vaultCredentials    VaultCredential[]
   clients             Client[]
+  transactions        Transaction[]
+}
+
+// A money movement — the finance ledger. type INCOME (client charges) or
+// EXPENSE (server, email license, vendor payments like Google). Net profit is
+// simply income − expense. Optionally tied to a Client (per-client P&L) and/or a
+// Renewal. status: PAID | PENDING. Soft-deleted. amountCents is always positive;
+// direction comes from `type`.
+model Transaction {
+  id          String    @id @default(cuid())
+  workspaceId String
+  clientId    String?
+  renewalId   String?
+  type        String // INCOME | EXPENSE
+  amountCents Int
+  currency    String    @default("AED")
+  category    String    @default("OTHER")
+  vendor      String? // who paid you / who you paid (e.g. "Google", client name)
+  description String?
+  date        DateTime
+  status      String    @default("PAID") // PAID | PENDING
+  method      String? // Cash | Bank | Card | Online
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, type, date, deletedAt])
+  @@index([clientId])
 }
 
 // A managed client — the hub record. Open one to see everything tied to it:
@@ -100,6 +132,7 @@ model Client {
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   vaultCredentials VaultCredential[]
   renewals         Renewal[]
+  transactions     Transaction[]
 
   @@index([workspaceId, status, deletedAt])
 }

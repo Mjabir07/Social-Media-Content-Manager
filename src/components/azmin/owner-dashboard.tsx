@@ -58,7 +58,7 @@ export function AzminOwnerDashboard({ user, workspaceName, companies, activeComp
               <NavItem icon="services" label="Services" href="/azmin/services" />
               <NavItem icon="spark" label="Automations" href="/azmin/automations" />
               <NavItem icon="marketing" label="Publishing" href="/azmin/publishing" />
-              <NavItem icon="finance" label="Finance" badge="Soon" />
+              <NavItem icon="finance" label="Finance" href="/azmin/finance" />
             </nav>
 
             <div className="my-5 h-px bg-white/10" />
