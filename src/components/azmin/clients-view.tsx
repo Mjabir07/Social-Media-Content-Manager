@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Users, Plus, Loader2, X, AlertTriangle, KeyRound, CalendarClock, ArrowRight, Search, Globe } from "lucide-react";
+import { Users, Plus, Loader2, X, AlertTriangle, KeyRound, CalendarClock, ArrowRight, Search, Globe, Briefcase, Building2 } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 
 export type ClientCardDTO = {
   id: string;
   name: string;
+  type: string;
   domain: string | null;
   contactName: string | null;
   email: string | null;
@@ -16,6 +17,7 @@ export type ClientCardDTO = {
   status: string;
   credentialCount: number;
   renewalCount: number;
+  workCount: number;
   nextRenewalDate: string | null;
   nextRenewalDaysLeft: number | null;
 };
@@ -37,6 +39,7 @@ export function ClientsView({
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
+  const [type, setType] = useState("DIRECT");
   const [domain, setDomain] = useState("");
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,14 +64,14 @@ export function ClientsView({
     const res = await fetch("/api/clients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, domain: domain || null, contactName: contactName || null, email: email || null, phone: phone || null }),
+      body: JSON.stringify({ name, type, domain: domain || null, contactName: contactName || null, email: email || null, phone: phone || null }),
     });
     setSaving(false);
     if (!res.ok) {
       setError((await res.json().catch(() => ({}))).error ?? "Could not create client.");
       return;
     }
-    setName(""); setDomain(""); setContactName(""); setEmail(""); setPhone(""); setShowForm(false);
+    setName(""); setType("DIRECT"); setDomain(""); setContactName(""); setEmail(""); setPhone(""); setShowForm(false);
     await refresh();
   }
 
@@ -115,6 +118,13 @@ export function ClientsView({
             <label className="text-xs font-bold text-[#476987]">
               Client name
               <input className={`mt-1 ${inputCls}`} value={name} onChange={(e) => setName(e.target.value)} placeholder="Client / business name" required minLength={2} />
+            </label>
+            <label className="text-xs font-bold text-[#476987]">
+              Client type
+              <select className={`mt-1 ${inputCls}`} value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="DIRECT">Direct client</option>
+                <option value="RESELLER">Reseller (many works / end-customers)</option>
+              </select>
             </label>
             <label className="text-xs font-bold text-[#476987]">
               Domain <span className="font-normal text-[#93A9BF]">(searchable)</span>
@@ -176,11 +186,15 @@ export function ClientsView({
                           ? <p className="flex items-center gap-1 truncate text-xs font-bold text-[#0758C9]"><Globe size={11} /> {c.domain}</p>
                           : <p className="truncate text-xs font-semibold text-[#526F8A]">{c.contactName || c.email || "—"}</p>}
                       </div>
-                      {c.status === "INACTIVE" && <span className="ml-auto rounded-full bg-[#EEF3F8] px-2 py-0.5 text-[10px] font-bold uppercase text-[#5B7690]">Inactive</span>}
+                      <div className="ml-auto flex shrink-0 flex-col items-end gap-1">
+                        {c.type === "RESELLER" && <span className="inline-flex items-center gap-1 rounded-full bg-[#EFEBFB] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5C3AAE]"><Building2 size={10} /> Reseller</span>}
+                        {c.status === "INACTIVE" && <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-[10px] font-bold uppercase text-[#5B7690]">Inactive</span>}
+                      </div>
                     </div>
 
-                    <div className="mt-4 flex items-center gap-4 text-xs font-semibold text-[#526F8A]">
+                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-[#526F8A]">
                       <span className="flex items-center gap-1"><KeyRound size={13} className="text-[#087CFA]" /> {c.credentialCount} cred{c.credentialCount === 1 ? "" : "s"}</span>
+                      <span className="flex items-center gap-1"><Briefcase size={13} className="text-[#0758C9]" /> {c.workCount} work{c.workCount === 1 ? "" : "s"}</span>
                       <span className="flex items-center gap-1"><CalendarClock size={13} className="text-[#5C3AAE]" /> {c.renewalCount} renewal{c.renewalCount === 1 ? "" : "s"}</span>
                     </div>
 

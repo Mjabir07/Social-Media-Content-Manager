@@ -79,6 +79,7 @@ model Workspace {
   clients             Client[]
   transactions        Transaction[]
   devProjects         DevProject[]
+  works               Work[]
 }
 
 // A money movement — the finance ledger. type INCOME (client charges) or
@@ -120,6 +121,7 @@ model Client {
   id          String    @id @default(cuid())
   workspaceId String
   name        String
+  type        String    @default("DIRECT") // DIRECT | RESELLER — a reseller holds many works for different end-customers
   domain      String? // primary domain — you often recall a client by this
   contactName String?
   email       String?
@@ -135,8 +137,36 @@ model Client {
   vaultCredentials VaultCredential[]
   renewals         Renewal[]
   transactions     Transaction[]
+  works            Work[]
 
   @@index([workspaceId, status, deletedAt])
+}
+
+// A piece of work / service delivered under a Client. For a reseller client each
+// work can name its own end-customer (free text) — the company the work is really
+// for — while the bill still goes to the parent client. status: LEAD | ACTIVE |
+// DELIVERED | CLOSED. Soft-deleted.
+model Work {
+  id          String    @id @default(cuid())
+  workspaceId String
+  clientId    String
+  title       String
+  serviceType String? // e.g. "Website", "SEO", "Google Workspace setup"
+  endCustomer String? // reseller's end-company this work is for (free text)
+  amountCents Int?
+  currency    String    @default("AED")
+  status      String    @default("ACTIVE")
+  startDate   DateTime?
+  notes       String?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, clientId, deletedAt])
 }
 
 // A client credential kept safely for future use (domain panel, email logins,

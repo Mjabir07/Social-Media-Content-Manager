@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { daysUntil } from "@/lib/renewals-core";
+import { isClientType } from "@/lib/works-catalog";
 
 /**
  * Clients — the hub record. Each client rolls up its vault credentials and
@@ -11,6 +12,7 @@ import { daysUntil } from "@/lib/renewals-core";
 export type ClientDTO = {
   id: string;
   name: string;
+  type: string;
   domain: string | null;
   contactName: string | null;
   email: string | null;
@@ -19,14 +21,16 @@ export type ClientDTO = {
   notes: string | null;
   credentialCount: number;
   renewalCount: number;
+  workCount: number;
   nextRenewalDate: string | null;
   nextRenewalDaysLeft: number | null;
 };
 
 async function rollUp(workspaceId: string, clientId: string, now: Date) {
-  const [credentialCount, renewalCount, nextRenewal] = await Promise.all([
+  const [credentialCount, renewalCount, workCount, nextRenewal] = await Promise.all([
     prisma.vaultCredential.count({ where: { workspaceId, clientId, deletedAt: null } }),
     prisma.renewal.count({ where: { workspaceId, clientId, deletedAt: null } }),
+    prisma.work.count({ where: { workspaceId, clientId, deletedAt: null } }),
     prisma.renewal.findFirst({
       where: { workspaceId, clientId, deletedAt: null, status: "ACTIVE" },
       orderBy: { renewalDate: "asc" },
@@ -36,6 +40,7 @@ async function rollUp(workspaceId: string, clientId: string, now: Date) {
   return {
     credentialCount,
     renewalCount,
+    workCount,
     nextRenewalDate: nextRenewal ? nextRenewal.renewalDate.toISOString() : null,
     nextRenewalDaysLeft: nextRenewal ? daysUntil(nextRenewal.renewalDate, now) : null,
   };
@@ -49,7 +54,7 @@ export async function getClients(workspaceId: string): Promise<ClientDTO[]> {
   });
   return Promise.all(
     rows.map(async (c) => ({
-      id: c.id, name: c.name, domain: c.domain, contactName: c.contactName, email: c.email, phone: c.phone,
+      id: c.id, name: c.name, type: c.type, domain: c.domain, contactName: c.contactName, email: c.email, phone: c.phone,
       status: c.status, notes: c.notes, ...(await rollUp(workspaceId, c.id, now)),
     })),
   );
@@ -59,13 +64,14 @@ export async function getClient(workspaceId: string, id: string): Promise<Client
   const c = await prisma.client.findFirst({ where: { id, workspaceId, deletedAt: null } });
   if (!c) return null;
   return {
-    id: c.id, name: c.name, domain: c.domain, contactName: c.contactName, email: c.email, phone: c.phone,
+    id: c.id, name: c.name, type: c.type, domain: c.domain, contactName: c.contactName, email: c.email, phone: c.phone,
     status: c.status, notes: c.notes, ...(await rollUp(workspaceId, c.id, new Date())),
   };
 }
 
 export type ClientInput = {
   name: string;
+  type?: string;
   domain?: string | null;
   contactName?: string | null;
   email?: string | null;
@@ -80,6 +86,7 @@ export async function createClient(workspaceId: string, createdById: string | nu
       workspaceId,
       createdById: createdById ?? undefined,
       name: input.name.trim(),
+      type: isClientType(input.type) ? input.type : "DIRECT",
       domain: input.domain?.trim() || null,
       contactName: input.contactName?.trim() || null,
       email: input.email?.trim() || null,
@@ -93,6 +100,7 @@ export async function createClient(workspaceId: string, createdById: string | nu
 export async function updateClient(workspaceId: string, id: string, patch: Partial<ClientInput>) {
   const data: Record<string, unknown> = {};
   if (patch.name !== undefined) data.name = patch.name.trim();
+  if (patch.type !== undefined && isClientType(patch.type)) data.type = patch.type;
   if (patch.domain !== undefined) data.domain = patch.domain?.trim() || null;
   if (patch.contactName !== undefined) data.contactName = patch.contactName?.trim() || null;
   if (patch.email !== undefined) data.email = patch.email?.trim() || null;

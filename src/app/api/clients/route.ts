@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
+  type: z.enum(["DIRECT", "RESELLER"]).optional(),
   domain: z.string().trim().max(200).optional().nullable(),
   contactName: z.string().trim().max(120).optional().nullable(),
   email: z.string().trim().email().max(200).optional().or(z.literal("")).nullable(),

@@ -4,6 +4,7 @@ import { getClient } from "@/lib/clients";
 import { getVaultCredentials, isCredentialVaultReady } from "@/lib/client-vault";
 import { getServiceRenewals } from "@/lib/renewals";
 import { getTransactions } from "@/lib/finance";
+import { getWorks } from "@/lib/works";
 import { ClientDetailView } from "@/components/azmin/client-detail-view";
 import type { TxStatus, TxType } from "@/lib/finance-core";
 
@@ -17,10 +18,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const client = await getClient(user.workspaceId, id);
   if (!client) notFound();
 
-  const [credentials, renewals, transactions] = await Promise.all([
+  const [credentials, renewals, transactions, works] = await Promise.all([
     getVaultCredentials(user.workspaceId, id),
     getServiceRenewals(user.workspaceId, id),
     getTransactions(user.workspaceId, { clientId: id }),
+    getWorks(user.workspaceId, id),
   ]);
 
   return (
@@ -28,6 +30,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       client={{
         id: client.id,
         name: client.name,
+        type: client.type,
         domain: client.domain,
         contactName: client.contactName,
         email: client.email,
@@ -36,7 +39,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         notes: client.notes,
         credentialCount: client.credentialCount,
         renewalCount: client.renewalCount,
+        workCount: client.workCount,
       }}
+      works={works.map((w) => ({
+        id: w.id, clientId: w.clientId, title: w.title, serviceType: w.serviceType, endCustomer: w.endCustomer,
+        amountCents: w.amountCents, currency: w.currency, status: w.status,
+        startDate: w.startDate ? w.startDate.toISOString() : null,
+        notes: w.notes, createdAt: w.createdAt.toISOString(),
+      }))}
       credentials={credentials}
       renewals={renewals.map((r) => ({
         id: r.id, service: r.service, clientName: r.clientName, clientEmail: r.clientEmail,
