@@ -255,8 +255,8 @@ export function FinanceView({
                         <div className="text-xs text-[#8299AE]">{new Date(t.date).toLocaleDateString()}{t.vendor ? ` · ${t.vendor}` : ""}{t.method ? ` · ${t.method}` : ""}{t.description ? ` · ${t.description}` : ""}</div>
                       </div>
                       {canManage && t.status === "PENDING" && (
-                        <button onClick={() => markPaid(t.id)} disabled={busyId === t.id} title="Mark as received (money in your account/cash)" className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#B8CCE0] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
-                          {busyId === t.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Mark paid
+                        <button onClick={() => markPaid(t.id)} disabled={busyId === t.id} title={income ? "Mark as received (money in your account/cash)" : "Mark as paid to vendor"} className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#B8CCE0] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
+                          {busyId === t.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {income ? "Mark paid" : "Mark settled"}
                         </button>
                       )}
                       <span className={`shrink-0 font-bold ${income ? "text-[#087B54]" : "text-[#B4231C]"}`}>{income ? "+" : "−"}{formatMoney(t.amountCents, t.currency)}</span>

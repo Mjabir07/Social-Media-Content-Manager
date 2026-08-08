@@ -203,8 +203,9 @@ export async function markRenewed(workspaceId: string, id: string, createdById: 
   await prisma.renewal.updateMany({ where: { id, workspaceId }, data: { renewalDate: next, status: "ACTIVE" } });
   await prisma.notification.deleteMany({ where: { workspaceId, action: SERVICE_ACTION, targetId: id } });
 
-  // Client income is PENDING — clients pay later by bank transfer / cash, which
-  // you confirm with "Mark paid". Vendor cost is PAID (you already paid Google).
+  // Both sides start PENDING and you confirm with "Mark paid" when money actually
+  // moves — clients pay you later (transfer/cash), and you may pay the vendor on
+  // credit / delayed. Profit only realizes once both are marked paid.
   if (row.amountCents && row.amountCents > 0) {
     await createTransaction(workspaceId, createdById, {
       type: "INCOME", amountCents: row.amountCents, currency: row.currency, category: "RENEWAL",
@@ -216,7 +217,7 @@ export async function markRenewed(workspaceId: string, id: string, createdById: 
     await createTransaction(workspaceId, createdById, {
       type: "EXPENSE", amountCents: row.costCents, currency: row.currency, category: "EMAIL_LICENSE",
       clientId: row.clientId, renewalId: row.id, vendor: row.vendor ?? row.service,
-      description: `${row.service} vendor cost — ${row.clientName}`, date: paidOn, status: "PAID",
+      description: `${row.service} vendor cost — ${row.clientName}`, date: paidOn, status: "PENDING",
     });
   }
   return 1;

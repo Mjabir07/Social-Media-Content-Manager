@@ -42,9 +42,10 @@ export async function runWeeklyDigest(now: Date = new Date()): Promise<DigestRes
       const existing = await prisma.notification.findFirst({ where: { workspaceId, action: DIGEST_ACTION, targetLabel: key }, select: { id: true } });
       if (existing) continue;
 
-      const [renewals, pendingIncome, monthTx, overdueTasks] = await Promise.all([
+      const [renewals, pendingIncome, pendingExpense, monthTx, overdueTasks] = await Promise.all([
         prisma.renewal.findMany({ where: { workspaceId, status: "ACTIVE", deletedAt: null }, select: { renewalDate: true } }),
         prisma.transaction.aggregate({ _sum: { amountCents: true }, where: { workspaceId, deletedAt: null, type: "INCOME", status: "PENDING" } }),
+        prisma.transaction.aggregate({ _sum: { amountCents: true }, where: { workspaceId, deletedAt: null, type: "EXPENSE", status: "PENDING" } }),
         prisma.transaction.findMany({ where: { workspaceId, deletedAt: null, status: "PAID", date: { gte: monthStart } }, select: { type: true, amountCents: true, currency: true } }),
         prisma.task.count({ where: { workspaceId, deletedAt: null, status: { not: "DONE" }, dueDate: { lt: now } } }),
       ]);
@@ -60,14 +61,16 @@ export async function runWeeklyDigest(now: Date = new Date()): Promise<DigestRes
       for (const t of monthTx) netCents += t.type === "INCOME" ? t.amountCents : -t.amountCents;
       const currency = monthTx[0]?.currency ?? "AED";
       const unpaidCents = pendingIncome._sum.amountCents ?? 0;
+      const payableCents = pendingExpense._sum.amountCents ?? 0;
 
       // Nothing worth pinging about? skip (keeps the digest signal-only).
-      if (dueSoon === 0 && overdue === 0 && unpaidCents === 0 && netCents === 0 && overdueTasks === 0) continue;
+      if (dueSoon === 0 && overdue === 0 && unpaidCents === 0 && payableCents === 0 && netCents === 0 && overdueTasks === 0) continue;
 
       const parts = [
         `${dueSoon} renewal${dueSoon === 1 ? "" : "s"} due in 30d`,
         ...(overdue ? [`${overdue} overdue`] : []),
-        `${formatMoney(unpaidCents, currency)} unpaid`,
+        `${formatMoney(unpaidCents, currency)} to collect`,
+        ...(payableCents ? [`${formatMoney(payableCents, currency)} to pay vendors`] : []),
         `net this month ${formatMoney(netCents, currency)}`,
         ...(overdueTasks ? [`${overdueTasks} task${overdueTasks === 1 ? "" : "s"} overdue`] : []),
       ];
