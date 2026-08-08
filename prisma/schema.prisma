@@ -15,7 +15,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Runtime queries use the pooled connection (DATABASE_URL). Schema migrations
+  // (prisma migrate deploy) MUST use a direct, non-pooled connection — pgbouncer
+  // can't hold the advisory lock migrate needs (Neon "-pooler" host → P1002).
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
