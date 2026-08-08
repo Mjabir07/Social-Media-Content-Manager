@@ -261,16 +261,21 @@ export function ClientDetailView({
             />
           )}
           {tab === "finance" && (
-            <FinanceView
-              initialTransactions={transactions}
-              clients={[{ id: client.id, name: client.name }]}
-              canManage={canManage}
-              userName={userName}
-              userEmail={userEmail}
-              userRole={userRole}
-              scopeClientId={client.id}
-              embedded
-            />
+            <>
+              <p className="mb-4 flex items-center gap-2 rounded-xl border border-[#D7E4F0] bg-white px-4 py-2.5 text-xs font-semibold text-[#526F8A]">
+                <Wallet size={14} className="text-[#0758C9]" /> Overview only. Income is auto-posted from Work Orders and Renewals — mark payments received there or in the main Finance page.
+              </p>
+              <FinanceView
+                initialTransactions={transactions}
+                clients={[{ id: client.id, name: client.name }]}
+                canManage={false}
+                userName={userName}
+                userEmail={userEmail}
+                userRole={userRole}
+                scopeClientId={client.id}
+                embedded
+              />
+            </>
           )}
         </div>
       </div>

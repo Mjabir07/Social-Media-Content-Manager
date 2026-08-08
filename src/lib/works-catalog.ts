@@ -34,3 +34,11 @@ export function formatWorkAmount(amountCents: number | null | undefined, currenc
 export function worksTotalCents(works: Array<{ amountCents: number | null }>): number {
   return works.reduce((sum, w) => sum + (w.amountCents ?? 0), 0);
 }
+
+// Total = quantity × unit price. Null when there is no unit price. Quantity
+// falls back to 1 and never goes below 1.
+export function computeAmountCents(quantity: number | null | undefined, unitPriceCents: number | null | undefined): number | null {
+  if (unitPriceCents == null) return null;
+  const qty = Math.max(1, Math.round(quantity ?? 1));
+  return qty * Math.max(0, Math.round(unitPriceCents));
+}

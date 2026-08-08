@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { guard } from "@/lib/api-guard";
-import { updateWork, deleteWork, billWork } from "@/lib/works";
+import { updateWork, deleteWork } from "@/lib/works";
 import { WORK_STATUSES } from "@/lib/works-catalog";
 
 export const runtime = "nodejs";
@@ -10,12 +10,12 @@ const patchSchema = z.object({
   title: z.string().trim().min(2).max(160).optional(),
   serviceType: z.string().trim().max(120).optional().nullable(),
   endCustomer: z.string().trim().max(160).optional().nullable(),
-  amountCents: z.number().int().nonnegative().optional().nullable(),
+  quantity: z.number().int().positive().max(1000000).optional().nullable(),
+  unitPriceCents: z.number().int().nonnegative().optional().nullable(),
   currency: z.string().trim().length(3).optional(),
   status: z.enum(WORK_STATUSES).optional(),
   startDate: z.string().trim().optional().nullable(),
   notes: z.string().trim().max(2000).optional().nullable(),
-  action: z.literal("bill").optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,15 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const parsed = patchSchema.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "Check the fields." }, { status: 400 });
-
-  const { action, ...patch } = parsed.data;
-  if (action === "bill") {
-    const res = await billWork(g.user.workspaceId, id, g.user.id);
-    if (!res.ok) return Response.json({ error: res.error }, { status: res.error === "Not found" ? 404 : 400 });
-    return Response.json({ ok: true });
-  }
-
-  const count = await updateWork(g.user.workspaceId, id, patch);
+  const count = await updateWork(g.user.workspaceId, id, g.user.id, parsed.data);
   if (count === 0) return new Response("Not found", { status: 404 });
   return Response.json({ ok: true });
 }

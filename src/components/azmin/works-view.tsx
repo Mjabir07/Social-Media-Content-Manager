@@ -16,9 +16,12 @@ export type WorkDTO = {
   title: string;
   serviceType: string | null;
   endCustomer: string | null;
+  quantity: number;
+  unitPriceCents: number | null;
   amountCents: number | null;
   currency: string;
   status: WorkStatus;
+  invoiced: boolean;
   startDate: string | null;
   notes: string | null;
   createdAt: string;
@@ -48,9 +51,14 @@ export function WorksView({
   const [title, setTitle] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [endCustomer, setEndCustomer] = useState("");
-  const [amount, setAmount] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [unitPrice, setUnitPrice] = useState("");
   const [status, setStatus] = useState<WorkStatus>("ACTIVE");
   const [notes, setNotes] = useState("");
+
+  const qtyNum = Math.max(1, Math.round(parseFloat(quantity) || 1));
+  const unitCents = unitPrice ? Math.round(parseFloat(unitPrice) * 100) : null;
+  const previewAmount = unitCents != null ? qtyNum * unitCents : null;
 
   async function refresh() {
     const res = await fetch(`/api/works?clientId=${clientId}`, { cache: "no-store" });
@@ -58,7 +66,7 @@ export function WorksView({
   }
 
   function resetForm() {
-    setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setAmount(""); setStatus("ACTIVE"); setNotes("");
+    setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setStatus("ACTIVE"); setNotes("");
     setShowForm(false); setError(null);
   }
 
@@ -67,7 +75,8 @@ export function WorksView({
     setTitle(w.title);
     setServiceType(w.serviceType ?? "");
     setEndCustomer(w.endCustomer ?? "");
-    setAmount(w.amountCents != null ? String(w.amountCents / 100) : "");
+    setQuantity(String(w.quantity || 1));
+    setUnitPrice(w.unitPriceCents != null ? String(w.unitPriceCents / 100) : "");
     setStatus(w.status);
     setNotes(w.notes ?? "");
     setError(null);
@@ -78,9 +87,8 @@ export function WorksView({
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const amountCents = amount ? Math.round(parseFloat(amount) * 100) : null;
     const editing = editId !== null;
-    const body = { title, serviceType: serviceType || null, endCustomer: endCustomer || null, amountCents, status, notes: notes || null, ...(editing ? {} : { clientId }) };
+    const body = { title, serviceType: serviceType || null, endCustomer: endCustomer || null, quantity: qtyNum, unitPriceCents: unitCents, status, notes: notes || null, ...(editing ? {} : { clientId }) };
     const res = await fetch(editing ? `/api/works/${editId}` : "/api/works", {
       method: editing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,15 +108,6 @@ export function WorksView({
     setBusyId(id);
     await fetch(`/api/works/${id}`, { method: "DELETE" });
     setBusyId(null);
-    await refresh();
-  }
-
-  async function bill(id: string) {
-    setBusyId(id);
-    setError(null);
-    const res = await fetch(`/api/works/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "bill" }) });
-    setBusyId(null);
-    if (!res.ok) { setError((await res.json().catch(() => ({}))).error ?? "Could not bill."); return; }
     await refresh();
   }
 
@@ -157,9 +156,20 @@ export function WorksView({
             <input className={`mt-1 ${inputCls}`} value={endCustomer} onChange={(e) => setEndCustomer(e.target.value)} placeholder="End-company name" />
           </label>
           <label className="text-xs font-bold text-[#476987]">
-            Amount
-            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            Quantity <span className="font-normal text-[#93A9BF]">(seats / units / licenses)</span>
+            <input className={`mt-1 ${inputCls}`} type="number" min="1" step="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="1" />
           </label>
+          <label className="text-xs font-bold text-[#476987]">
+            Unit price
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="0.00" />
+          </label>
+          <div className="text-xs font-bold text-[#476987]">
+            Amount <span className="font-normal text-[#93A9BF]">(auto: qty × unit)</span>
+            <div className="mt-1 flex items-center rounded-xl border border-[#DDE8F2] bg-[#F7FAFE] px-3.5 py-2.5 text-sm font-bold text-[#173A5C]">
+              {previewAmount != null ? formatWorkAmount(previewAmount, "AED") : <span className="font-normal text-[#93A9BF]">—</span>}
+              {previewAmount != null && previewAmount > 0 && <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-[#9A6711]">auto-invoiced · pending</span>}
+            </div>
+          </div>
           <label className="text-xs font-bold text-[#476987]">
             Status
             <select className={`mt-1 ${inputCls}`} value={status} onChange={(e) => setStatus(e.target.value as WorkStatus)}>
@@ -204,15 +214,14 @@ export function WorksView({
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-[#526F8A]">
                     {w.endCustomer && <span className="inline-flex items-center gap-1 text-[#5C3AAE]"><Building2 size={12} /> {w.endCustomer}</span>}
-                    {amt && <span className="text-[#234B70]">{amt}</span>}
+                    {w.unitPriceCents != null && <span className="text-[#72899E]">{w.quantity} × {formatWorkAmount(w.unitPriceCents, w.currency)}</span>}
+                    {amt && <span className="text-[#234B70]">= {amt}</span>}
+                    {w.invoiced && <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF1D5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9A6711]"><Wallet size={11} /> Invoiced · pending</span>}
                   </div>
                   {w.notes && <p className="mt-1 text-xs text-[#7C93A8]">{w.notes}</p>}
                 </div>
                 {canManage && (
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <button onClick={() => bill(w.id)} disabled={busy} title="Post this amount as pending income to the client's Finance" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
-                      {busy ? <Loader2 size={13} className="animate-spin" /> : <Wallet size={13} />} Bill
-                    </button>
                     <button onClick={() => startEdit(w)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#234B70] transition hover:border-[#087CFA]">
                       <Pencil size={13} /> Edit
                     </button>

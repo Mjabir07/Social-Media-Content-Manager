@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Work" ADD COLUMN "quantity" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "Work" ADD COLUMN "unitPriceCents" INTEGER;
+ALTER TABLE "Work" ADD COLUMN "invoiceTxnId" TEXT;
