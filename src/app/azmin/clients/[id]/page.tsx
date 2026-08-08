@@ -3,7 +3,9 @@ import { getCurrentUser } from "@/lib/session";
 import { getClient } from "@/lib/clients";
 import { getVaultCredentials, isCredentialVaultReady } from "@/lib/client-vault";
 import { getServiceRenewals } from "@/lib/renewals";
+import { getTransactions } from "@/lib/finance";
 import { ClientDetailView } from "@/components/azmin/client-detail-view";
+import type { TxStatus, TxType } from "@/lib/finance-core";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +17,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const client = await getClient(user.workspaceId, id);
   if (!client) notFound();
 
-  const [credentials, renewals] = await Promise.all([
+  const [credentials, renewals, transactions] = await Promise.all([
     getVaultCredentials(user.workspaceId, id),
     getServiceRenewals(user.workspaceId, id),
+    getTransactions(user.workspaceId, { clientId: id }),
   ]);
 
   return (
@@ -38,6 +41,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         id: r.id, service: r.service, clientName: r.clientName, clientEmail: r.clientEmail,
         amountCents: r.amountCents, currency: r.currency, renewalDate: r.renewalDate.toISOString(),
         status: r.status, notes: r.notes, daysLeft: r.daysLeft, stage: r.stage,
+      }))}
+      transactions={transactions.map((t) => ({
+        id: t.id, type: t.type as TxType, amountCents: t.amountCents, currency: t.currency,
+        category: t.category, clientId: t.clientId, vendor: t.vendor, description: t.description,
+        date: t.date.toISOString(), status: t.status as TxStatus, method: t.method,
       }))}
       vaultReady={isCredentialVaultReady()}
       canManage={user.role !== "VIEWER"}

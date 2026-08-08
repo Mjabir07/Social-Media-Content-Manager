@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { CalendarClock, Plus, Loader2, X, AlertTriangle, CheckCircle2, FileText, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarClock, Plus, Loader2, X, AlertTriangle, CheckCircle2, FileText, RefreshCw, Trash2, Copy, Check, Mail } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
-import { formatAmount, type ServiceStage } from "@/lib/renewals-core";
+import { formatAmount, buildInvoiceEmail, type ServiceStage } from "@/lib/renewals-core";
 
 export type ServiceRenewalDTO = {
   id: string;
@@ -62,6 +62,17 @@ export function RenewalsView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ subject: string; body: string; email: string | null } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function openDraft(r: ServiceRenewalDTO) {
+    const { subject, body } = buildInvoiceEmail({ service: r.service, clientName: r.clientName, renewalDate: r.renewalDate, amountCents: r.amountCents, currency: r.currency });
+    setDraft({ subject, body, email: r.clientEmail });
+  }
+
+  async function copyText(text: string, key: string) {
+    try { await navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500); } catch { /* blocked */ }
+  }
 
   async function refresh() {
     const res = await fetch(`/api/renewals${scopeClientId ? `?clientId=${scopeClientId}` : ""}`, { cache: "no-store" });
@@ -206,6 +217,9 @@ export function RenewalsView({
                     </div>
                     {canManage && (
                       <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <button onClick={() => openDraft(r)} title="Pre-fill the renewal invoice email" className="inline-flex items-center gap-1.5 rounded-lg border border-[#D8C9F2] bg-[#F7F1FE] px-3 py-2 text-xs font-bold text-[#5C3AAE] transition hover:border-[#5C3AAE]">
+                          <FileText size={13} /> Draft invoice
+                        </button>
                         <button onClick={() => markRenewed(r.id)} disabled={busyId === r.id} title="Roll renewal date +1 year" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
                           {busyId === r.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Mark renewed
                         </button>
@@ -227,6 +241,30 @@ export function RenewalsView({
           </p>
         )}
         {!embedded && <p className="mt-3 flex items-center gap-2 text-xs text-[#8299AE]"><CheckCircle2 size={13} /> Reminders post to your notifications automatically each day — no manual checking.</p>}
+
+        {draft && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#03142E]/40 p-4" onClick={() => setDraft(null)}>
+            <div className="w-full max-w-xl rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 font-display text-lg font-bold text-[#173A5C]"><FileText size={18} className="text-[#5C3AAE]" /> Invoice email draft</h3>
+                <button onClick={() => setDraft(null)} className="rounded-lg p-1 text-[#8299AE] hover:bg-[#EAF1F9]"><X size={18} /></button>
+              </div>
+              <label className="mt-4 block text-xs font-bold text-[#476987]">Subject
+                <div className="mt-1 flex gap-2">
+                  <input readOnly value={draft.subject} className="w-full rounded-xl border border-[#B8CCE0] bg-[#F7FAFE] px-3 py-2 text-sm text-[#0f2137]" />
+                  <button onClick={() => copyText(draft.subject, "subj")} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[#B8CCE0] bg-white px-3 text-xs font-bold text-[#234B70] hover:border-[#087CFA]">{copied === "subj" ? <Check size={13} /> : <Copy size={13} />}</button>
+                </div>
+              </label>
+              <label className="mt-3 block text-xs font-bold text-[#476987]">Body
+                <textarea readOnly value={draft.body} rows={12} className="mt-1 w-full rounded-xl border border-[#B8CCE0] bg-[#F7FAFE] px-3 py-2 font-mono text-xs text-[#0f2137]" />
+              </label>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <button onClick={() => copyText(draft.body, "body")} className="inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#076BE0]">{copied === "body" ? <Check size={15} /> : <Copy size={15} />} Copy email</button>
+                <a href={`mailto:${draft.email ?? ""}?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`} className="inline-flex items-center gap-2 rounded-xl border border-[#B8CCE0] bg-white px-4 py-2.5 text-sm font-bold text-[#234B70] transition hover:border-[#087CFA]"><Mail size={15} /> Open in email</a>
+              </div>
+            </div>
+          </div>
+        )}
     </>
   );
 

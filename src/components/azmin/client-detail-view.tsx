@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Users, ArrowLeft, Mail, Phone, Trash2, Loader2, KeyRound, CalendarClock } from "lucide-react";
+import { Users, ArrowLeft, Mail, Phone, Trash2, Loader2, KeyRound, CalendarClock, Wallet } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { VaultView, type VaultCredentialDTO } from "@/components/azmin/vault-view";
 import { RenewalsView, type ServiceRenewalDTO } from "@/components/azmin/renewals-view";
+import { FinanceView, type TransactionDTO } from "@/components/azmin/finance-view";
 
 export type ClientDetail = {
   id: string;
@@ -25,6 +26,7 @@ export function ClientDetailView({
   client,
   credentials,
   renewals,
+  transactions,
   vaultReady,
   canManage,
   canReveal,
@@ -35,6 +37,7 @@ export function ClientDetailView({
   client: ClientDetail;
   credentials: VaultCredentialDTO[];
   renewals: ServiceRenewalDTO[];
+  transactions: TransactionDTO[];
   vaultReady: boolean;
   canManage: boolean;
   canReveal: boolean;
@@ -43,7 +46,7 @@ export function ClientDetailView({
   userRole: string;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"credentials" | "renewals">("credentials");
+  const [tab, setTab] = useState<"credentials" | "renewals" | "finance">("credentials");
   const [busy, setBusy] = useState(false);
 
   async function remove() {
@@ -115,10 +118,13 @@ export function ClientDetailView({
           <button onClick={() => setTab("renewals")} className={tabCls(tab === "renewals")}>
             <CalendarClock size={16} /> Renewals <span className="rounded-full bg-white/25 px-1.5 text-xs">{client.renewalCount}</span>
           </button>
+          <button onClick={() => setTab("finance")} className={tabCls(tab === "finance")}>
+            <Wallet size={16} /> Finance <span className="rounded-full bg-white/25 px-1.5 text-xs">{transactions.length}</span>
+          </button>
         </div>
 
         <div className="mt-6">
-          {tab === "credentials" ? (
+          {tab === "credentials" && (
             <VaultView
               initialCredentials={credentials}
               vaultReady={vaultReady}
@@ -131,7 +137,8 @@ export function ClientDetailView({
               scopeClientName={client.name}
               embedded
             />
-          ) : (
+          )}
+          {tab === "renewals" && (
             <RenewalsView
               initialRenewals={renewals}
               canManage={canManage}
@@ -140,6 +147,18 @@ export function ClientDetailView({
               userRole={userRole}
               scopeClientId={client.id}
               scopeClientName={client.name}
+              embedded
+            />
+          )}
+          {tab === "finance" && (
+            <FinanceView
+              initialTransactions={transactions}
+              clients={[{ id: client.id, name: client.name }]}
+              canManage={canManage}
+              userName={userName}
+              userEmail={userEmail}
+              userRole={userRole}
+              scopeClientId={client.id}
               embedded
             />
           )}

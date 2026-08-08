@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isTxType, isTxStatus, categoriesFor, formatMoney,
-  computeSummary, byCategory, byClient,
+  computeSummary, byCategory, byClient, byMonth,
   type TxLike,
 } from "@/lib/finance-core";
 
@@ -53,6 +53,20 @@ describe("byCategory", () => {
     ]);
     expect(rows[0]).toMatchObject({ category: "SERVER", totalCents: 500 });
     expect(rows.find((r) => r.category === "RENEWAL")!.totalCents).toBe(400);
+  });
+});
+
+describe("byMonth", () => {
+  it("buckets PAID rows by calendar month, oldest first, with net", () => {
+    const rows = byMonth([
+      { ...tx({ type: "INCOME", amountCents: 1000 }), date: "2026-07-15" },
+      { ...tx({ type: "EXPENSE", amountCents: 400, category: "SERVER" }), date: "2026-07-20" },
+      { ...tx({ type: "INCOME", amountCents: 500 }), date: "2026-08-02" },
+      { ...tx({ type: "INCOME", amountCents: 9999, status: "PENDING" }), date: "2026-08-05" },
+    ]);
+    expect(rows.map((m) => m.month)).toEqual(["2026-07", "2026-08"]);
+    expect(rows[0]).toMatchObject({ incomeCents: 1000, expenseCents: 400, netCents: 600 });
+    expect(rows[1].incomeCents).toBe(500); // pending excluded
   });
 });
 

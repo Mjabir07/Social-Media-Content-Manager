@@ -96,6 +96,41 @@ export function serviceRenewalMessage(r: ServiceRenewalLike, daysLeft: number, s
   return `Reminder: ${subject} renews in ${daysLeft} days${tail}`;
 }
 
+// A professional invoice/reminder email pre-filled from a renewal. Pure text so
+// it's testable and client-safe; the UI adds copy / mailto around it.
+export function buildInvoiceEmail(input: {
+  service: string;
+  clientName: string;
+  renewalDate: Date | string;
+  amountCents?: number | null;
+  currency?: string;
+  fromName?: string;
+  fromEmail?: string;
+}): { subject: string; body: string } {
+  const dateStr = new Date(input.renewalDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const amt = formatAmount(input.amountCents ?? null, input.currency ?? "AED");
+  const from = input.fromName ?? "Azmin Digital";
+  const fromEmail = input.fromEmail ?? "it@azmindigital.com";
+  const subject = `${input.service} renewal — invoice for ${input.clientName} (due ${dateStr})`;
+  const amountLine = amt ? `\n- Amount: ${amt}` : "";
+  const body = `Hi ${input.clientName},
+
+Your ${input.service} subscription is due for its yearly renewal on ${dateStr}.
+
+Please find the renewal details below:
+- Service: ${input.service}${amountLine}
+- Renewal date: ${dateStr}
+
+Kindly settle the invoice before the renewal date so your service continues without any interruption. Once payment is confirmed, I'll process the renewal and confirm back.
+
+Any questions, just reply to this email.
+
+Best regards,
+${from}
+${fromEmail}`;
+  return { subject, body };
+}
+
 const KIND_NOUN: Record<RenewalKind, string> = { domain: "Domain", hosting: "Hosting", email: "Email service" };
 
 // Pre-rendered notification message for a reminder.

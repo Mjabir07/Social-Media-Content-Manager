@@ -3,6 +3,7 @@ import {
   serviceStage,
   serviceRenewalMessage,
   formatAmount,
+  buildInvoiceEmail,
   type ServiceRenewalLike,
 } from "@/lib/renewals-core";
 
@@ -54,5 +55,24 @@ describe("formatAmount", () => {
   });
   it("formats cents to a whole-unit currency string", () => {
     expect(formatAmount(120000, "AED")).toContain("1,200");
+  });
+});
+
+describe("buildInvoiceEmail", () => {
+  const inv = buildInvoiceEmail({ service: "Google Workspace", clientName: "Acme", renewalDate: "2026-09-01", amountCents: 120000, currency: "AED" });
+  it("subject names the service, client and due date", () => {
+    expect(inv.subject).toContain("Google Workspace renewal");
+    expect(inv.subject).toContain("Acme");
+    expect(inv.subject).toContain("1 September 2026");
+  });
+  it("body greets the client, states amount, and signs off with the brand", () => {
+    expect(inv.body).toContain("Hi Acme,");
+    expect(inv.body).toContain("AED");
+    expect(inv.body).toContain("Azmin Digital");
+    expect(inv.body).toContain("it@azmindigital.com");
+  });
+  it("omits the amount line when no amount is given", () => {
+    const noAmt = buildInvoiceEmail({ service: "Domain", clientName: "X", renewalDate: "2026-09-01" });
+    expect(noAmt.body).not.toContain("Amount:");
   });
 });

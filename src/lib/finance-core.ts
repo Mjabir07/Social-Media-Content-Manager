@@ -82,6 +82,26 @@ export function byCategory(txns: TxLike[]): CategoryTotal[] {
   return Array.from(map.values()).sort((a, b) => b.totalCents - a.totalCents);
 }
 
+export type MonthTotal = { month: string; label: string; incomeCents: number; expenseCents: number; netCents: number };
+
+// PAID totals per calendar month (YYYY-MM), oldest→newest. `date` is ISO/Date.
+export function byMonth(txns: Array<TxLike & { date: string | Date }>): MonthTotal[] {
+  const map = new Map<string, MonthTotal>();
+  for (const t of txns) {
+    if (t.status !== "PAID") continue;
+    const d = new Date(t.date);
+    if (Number.isNaN(d.getTime())) continue;
+    const month = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
+    const cur = map.get(month) ?? { month, label, incomeCents: 0, expenseCents: 0, netCents: 0 };
+    if (t.type === "INCOME") cur.incomeCents += t.amountCents;
+    else cur.expenseCents += t.amountCents;
+    cur.netCents = cur.incomeCents - cur.expenseCents;
+    map.set(month, cur);
+  }
+  return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
+}
+
 export type ClientPnL = { clientId: string; incomeCents: number; expenseCents: number; netCents: number };
 
 // Per-client profit/loss (PAID). Unassigned transactions (no clientId) are skipped.
