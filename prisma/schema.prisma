@@ -182,7 +182,9 @@ model Renewal {
   service     String // e.g. "Google Workspace"
   clientName  String // denormalized label (also works standalone)
   clientEmail String?
-  amountCents Int?
+  amountCents Int? // what you CHARGE the client (income)
+  costCents   Int? // what you PAY the vendor (expense) — enables profit auto-calc
+  vendor      String? // who you pay, e.g. "Google"
   currency    String    @default("AED")
   renewalDate DateTime
   status      String    @default("ACTIVE")

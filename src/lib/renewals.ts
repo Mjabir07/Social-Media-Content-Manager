@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createNotifications } from "@/lib/notifications";
+import { createTransaction } from "@/lib/finance";
 import {
   computeRenewalReminders,
   renewalMessage,
@@ -111,6 +112,8 @@ export type ServiceRenewalInput = {
   clientName: string;
   clientEmail?: string | null;
   amountCents?: number | null;
+  costCents?: number | null;
+  vendor?: string | null;
   currency?: string;
   renewalDate: string | Date;
   notes?: string | null;
@@ -123,6 +126,8 @@ export type ServiceRenewalDTO = {
   clientName: string;
   clientEmail: string | null;
   amountCents: number | null;
+  costCents: number | null;
+  vendor: string | null;
   currency: string;
   renewalDate: Date;
   status: string;
@@ -131,7 +136,7 @@ export type ServiceRenewalDTO = {
   stage: ServiceStage | null;
 };
 
-function toDTO(r: { id: string; service: string; clientName: string; clientEmail: string | null; amountCents: number | null; currency: string; renewalDate: Date; status: string; notes: string | null }, now: Date): ServiceRenewalDTO {
+function toDTO(r: { id: string; service: string; clientName: string; clientEmail: string | null; amountCents: number | null; costCents: number | null; vendor: string | null; currency: string; renewalDate: Date; status: string; notes: string | null }, now: Date): ServiceRenewalDTO {
   const daysLeft = daysUntil(r.renewalDate, now);
   return { ...r, daysLeft, stage: r.status === "ACTIVE" ? serviceStage(daysLeft) : null };
 }
@@ -160,6 +165,8 @@ export async function createServiceRenewal(workspaceId: string, createdById: str
       clientName: input.clientName.trim(),
       clientEmail: input.clientEmail?.trim() || null,
       amountCents: input.amountCents ?? null,
+      costCents: input.costCents ?? null,
+      vendor: input.vendor?.trim() || null,
       currency: input.currency ?? "AED",
       renewalDate: normalizeDate(input.renewalDate),
       notes: input.notes?.trim() || null,
@@ -173,6 +180,8 @@ export async function updateServiceRenewal(workspaceId: string, id: string, patc
   if (patch.clientName !== undefined) data.clientName = patch.clientName.trim();
   if (patch.clientEmail !== undefined) data.clientEmail = patch.clientEmail?.trim() || null;
   if (patch.amountCents !== undefined) data.amountCents = patch.amountCents ?? null;
+  if (patch.costCents !== undefined) data.costCents = patch.costCents ?? null;
+  if (patch.vendor !== undefined) data.vendor = patch.vendor?.trim() || null;
   if (patch.currency !== undefined) data.currency = patch.currency;
   if (patch.renewalDate !== undefined) data.renewalDate = normalizeDate(patch.renewalDate);
   if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
@@ -181,15 +190,33 @@ export async function updateServiceRenewal(workspaceId: string, id: string, patc
   return result.count;
 }
 
-// Mark a renewal paid/renewed: roll the date forward one year and reset the
-// reminder ladder (drop past notifications so next cycle fires cleanly).
-export async function markRenewed(workspaceId: string, id: string) {
+// Mark a renewal paid/renewed: roll the date forward one year, reset the reminder
+// ladder (drop past notifications), and AUTO-POST finance — income for what you
+// charged the client and expense for what you paid the vendor. Profit falls out
+// of the two entries (the Google case). Amounts only posted when present.
+export async function markRenewed(workspaceId: string, id: string, createdById: string | null = null) {
   const row = await prisma.renewal.findFirst({ where: { id, workspaceId, deletedAt: null } });
   if (!row) return 0;
+  const paidOn = new Date(row.renewalDate); // the cycle just closed = the old date
   const next = new Date(row.renewalDate);
   next.setFullYear(next.getFullYear() + 1);
   await prisma.renewal.updateMany({ where: { id, workspaceId }, data: { renewalDate: next, status: "ACTIVE" } });
   await prisma.notification.deleteMany({ where: { workspaceId, action: SERVICE_ACTION, targetId: id } });
+
+  if (row.amountCents && row.amountCents > 0) {
+    await createTransaction(workspaceId, createdById, {
+      type: "INCOME", amountCents: row.amountCents, currency: row.currency, category: "RENEWAL",
+      clientId: row.clientId, renewalId: row.id, vendor: row.clientName,
+      description: `${row.service} renewal — ${row.clientName}`, date: paidOn, status: "PAID",
+    });
+  }
+  if (row.costCents && row.costCents > 0) {
+    await createTransaction(workspaceId, createdById, {
+      type: "EXPENSE", amountCents: row.costCents, currency: row.currency, category: "EMAIL_LICENSE",
+      clientId: row.clientId, renewalId: row.id, vendor: row.vendor ?? row.service,
+      description: `${row.service} vendor cost — ${row.clientName}`, date: paidOn, status: "PAID",
+    });
+  }
   return 1;
 }
 

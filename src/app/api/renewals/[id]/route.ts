@@ -10,6 +10,8 @@ const patchSchema = z.object({
   clientName: z.string().trim().min(2).max(120).optional(),
   clientEmail: z.string().trim().email().max(200).optional().or(z.literal("")).nullable(),
   amountCents: z.number().int().nonnegative().optional().nullable(),
+  costCents: z.number().int().nonnegative().optional().nullable(),
+  vendor: z.string().trim().max(160).optional().nullable(),
   currency: z.string().trim().length(3).optional(),
   renewalDate: z.string().trim().min(4).optional(),
   notes: z.string().trim().max(2000).optional().nullable(),
@@ -25,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!parsed.success) return Response.json({ error: "Check the fields." }, { status: 400 });
 
   if (parsed.data.action === "markRenewed") {
-    const count = await markRenewed(g.user.workspaceId, id);
+    const count = await markRenewed(g.user.workspaceId, id, g.user.id);
     if (count === 0) return new Response("Not found", { status: 404 });
     return Response.json({ ok: true });
   }

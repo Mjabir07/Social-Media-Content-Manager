@@ -19,6 +19,8 @@ export default async function RenewalsPage() {
         clientName: r.clientName,
         clientEmail: r.clientEmail,
         amountCents: r.amountCents,
+        costCents: r.costCents,
+        vendor: r.vendor,
         currency: r.currency,
         renewalDate: r.renewalDate.toISOString(),
         status: r.status,

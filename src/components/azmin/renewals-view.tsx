@@ -14,6 +14,8 @@ export type ServiceRenewalDTO = {
   clientName: string;
   clientEmail: string | null;
   amountCents: number | null;
+  costCents: number | null;
+  vendor: string | null;
   currency: string;
   renewalDate: string;
   status: string;
@@ -56,6 +58,8 @@ export function RenewalsView({
   const [clientName, setClientName] = useState(scopeClientName ?? "");
   const [clientEmail, setClientEmail] = useState("");
   const [amount, setAmount] = useState("");
+  const [cost, setCost] = useState("");
+  const [vendor, setVendor] = useState("");
   const [currency, setCurrency] = useState("AED");
   const [renewalDate, setRenewalDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -85,17 +89,18 @@ export function RenewalsView({
     setSaving(true);
     setError(null);
     const amountCents = amount ? Math.round(parseFloat(amount) * 100) : null;
+    const costCents = cost ? Math.round(parseFloat(cost) * 100) : null;
     const res = await fetch("/api/renewals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service, clientName: scopeClientName ?? clientName, clientId: scopeClientId ?? null, clientEmail: clientEmail || null, amountCents, currency, renewalDate, notes: notes || null }),
+      body: JSON.stringify({ service, clientName: scopeClientName ?? clientName, clientId: scopeClientId ?? null, clientEmail: clientEmail || null, amountCents, costCents, vendor: vendor || null, currency, renewalDate, notes: notes || null }),
     });
     setSaving(false);
     if (!res.ok) {
       setError((await res.json().catch(() => ({}))).error ?? "Could not save renewal.");
       return;
     }
-    setClientName(scopeClientName ?? ""); setClientEmail(""); setAmount(""); setRenewalDate(""); setNotes(""); setShowForm(false);
+    setClientName(scopeClientName ?? ""); setClientEmail(""); setAmount(""); setCost(""); setVendor(""); setRenewalDate(""); setNotes(""); setShowForm(false);
     await refresh();
   }
 
@@ -157,8 +162,16 @@ export function RenewalsView({
               <input className={`mt-1 ${inputCls}`} type="date" value={renewalDate} onChange={(e) => setRenewalDate(e.target.value)} required />
             </label>
             <label className="text-xs font-bold text-[#476987]">
-              Amount / year
+              You charge client / year
               <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            </label>
+            <label className="text-xs font-bold text-[#476987]">
+              You pay vendor / year <span className="font-normal text-[#93A9BF]">(for profit)</span>
+              <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
+            </label>
+            <label className="text-xs font-bold text-[#476987]">
+              Vendor
+              <input className={`mt-1 ${inputCls}`} value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="e.g. Google" />
             </label>
             <label className="text-xs font-bold text-[#476987]">
               Currency
@@ -211,6 +224,10 @@ export function RenewalsView({
                           {r.daysLeft < 0 ? `${Math.abs(r.daysLeft)}d overdue` : r.daysLeft === 0 ? "today" : `in ${r.daysLeft} days`}
                         </span>
                         {amt && <span className="text-[#234B70]">{amt}/yr</span>}
+                        {r.costCents != null && r.costCents > 0 && <span className="text-[#8299AE]">cost {formatAmount(r.costCents, r.currency)}</span>}
+                        {r.amountCents != null && r.costCents != null && r.costCents > 0 && (
+                          <span className="font-bold text-[#087B54]">profit {formatAmount(r.amountCents - r.costCents, r.currency)}</span>
+                        )}
                         {r.clientEmail && <span className="text-[#8299AE]">{r.clientEmail}</span>}
                       </div>
                       {r.notes && <p className="mt-1 text-xs text-[#7C93A8]">{r.notes}</p>}
@@ -220,7 +237,7 @@ export function RenewalsView({
                         <button onClick={() => openDraft(r)} title="Pre-fill the renewal invoice email" className="inline-flex items-center gap-1.5 rounded-lg border border-[#D8C9F2] bg-[#F7F1FE] px-3 py-2 text-xs font-bold text-[#5C3AAE] transition hover:border-[#5C3AAE]">
                           <FileText size={13} /> Draft invoice
                         </button>
-                        <button onClick={() => markRenewed(r.id)} disabled={busyId === r.id} title="Roll renewal date +1 year" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
+                        <button onClick={() => markRenewed(r.id)} disabled={busyId === r.id} title="Renew +1 year and auto-log income/expense to Finance" className="inline-flex items-center gap-1.5 rounded-lg border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
                           {busyId === r.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Mark renewed
                         </button>
                         <button onClick={() => remove(r.id)} disabled={busyId === r.id} className="inline-flex items-center gap-1.5 rounded-lg border border-[#F0C9C4] bg-white px-3 py-2 text-xs font-bold text-[#C0362C] transition hover:bg-[#FDECEC] disabled:opacity-60">

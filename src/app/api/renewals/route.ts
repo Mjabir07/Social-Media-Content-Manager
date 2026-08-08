@@ -10,6 +10,8 @@ const createSchema = z.object({
   clientName: z.string().trim().min(2).max(120),
   clientEmail: z.string().trim().email().max(200).optional().or(z.literal("")).nullable(),
   amountCents: z.number().int().nonnegative().optional().nullable(),
+  costCents: z.number().int().nonnegative().optional().nullable(),
+  vendor: z.string().trim().max(160).optional().nullable(),
   currency: z.string().trim().length(3).optional(),
   renewalDate: z.string().trim().min(4),
   notes: z.string().trim().max(2000).optional().nullable(),

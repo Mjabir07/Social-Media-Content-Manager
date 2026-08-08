@@ -1,5 +1,6 @@
 import { runDuePosts } from "@/lib/posts";
 import { runRenewalReminders, runServiceRenewalReminders } from "@/lib/renewals";
+import { runWeeklyDigest } from "@/lib/digest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,12 +15,13 @@ async function run(req: Request) {
     const auth = req.headers.get("authorization");
     if (auth !== `Bearer ${secret}`) return new Response("Unauthorized", { status: 401 });
   }
-  const [posts, renewals, serviceRenewals] = await Promise.all([
+  const [posts, renewals, serviceRenewals, digest] = await Promise.all([
     runDuePosts(),
     runRenewalReminders(),
     runServiceRenewalReminders(),
+    runWeeklyDigest(),
   ]);
-  return Response.json({ ok: true, ...posts, renewals, serviceRenewals });
+  return Response.json({ ok: true, ...posts, renewals, serviceRenewals, digest });
 }
 
 export async function GET(req: Request) {

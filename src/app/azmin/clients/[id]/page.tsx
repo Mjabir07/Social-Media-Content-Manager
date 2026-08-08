@@ -39,8 +39,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       credentials={credentials}
       renewals={renewals.map((r) => ({
         id: r.id, service: r.service, clientName: r.clientName, clientEmail: r.clientEmail,
-        amountCents: r.amountCents, currency: r.currency, renewalDate: r.renewalDate.toISOString(),
-        status: r.status, notes: r.notes, daysLeft: r.daysLeft, stage: r.stage,
+        amountCents: r.amountCents, costCents: r.costCents, vendor: r.vendor, currency: r.currency,
+        renewalDate: r.renewalDate.toISOString(), status: r.status, notes: r.notes, daysLeft: r.daysLeft, stage: r.stage,
       }))}
       transactions={transactions.map((t) => ({
         id: t.id, type: t.type as TxType, amountCents: t.amountCents, currency: t.currency,
