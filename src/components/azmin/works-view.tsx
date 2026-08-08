@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Briefcase, Plus, Loader2, Trash2, Pencil, Building2, Wallet, X, AlertTriangle } from "lucide-react";
 import {
   WORK_STATUSES,
@@ -42,12 +43,15 @@ export function WorksView({
   clientId,
   isReseller,
   canManage,
+  defaultHourlyRateCents = null,
 }: {
   initialWorks: WorkDTO[];
   clientId: string;
   isReseller: boolean;
   canManage: boolean;
+  defaultHourlyRateCents?: number | null;
 }) {
+  const defaultRateStr = defaultHourlyRateCents != null ? String(defaultHourlyRateCents / 100) : "";
   const [works, setWorks] = useState<WorkDTO[]>(initialWorks);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -91,7 +95,7 @@ export function WorksView({
 
   function resetForm() {
     setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setUnitCost("");
-    setLaborHrs(""); setHourlyRate(""); setOperational(""); setHosting(""); setStatus("ACTIVE"); setNotes("");
+    setLaborHrs(""); setHourlyRate(defaultRateStr); setOperational(""); setHosting(""); setStatus("ACTIVE"); setNotes("");
     setShowForm(false); setError(null);
   }
 
@@ -205,7 +209,10 @@ export function WorksView({
             </select>
           </label>
 
-          <p className="sm:col-span-2 -mb-1 mt-1 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#8A5A0B]">Your cost (for profit)</p>
+          <p className="sm:col-span-2 -mb-1 mt-1 flex flex-wrap items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#8A5A0B]">
+            Your cost (for profit)
+            <Link href="/azmin/settings/rate" className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold normal-case tracking-normal text-[#0758C9] hover:underline">Set hourly rate →</Link>
+          </p>
           <label className="text-xs font-bold text-[#476987]">
             Vendor unit cost <span className="font-normal text-[#93A9BF]">(× qty)</span>
             <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" />

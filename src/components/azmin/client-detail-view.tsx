@@ -32,6 +32,7 @@ export function ClientDetailView({
   renewals,
   transactions,
   works,
+  defaultHourlyRateCents,
   vaultReady,
   canManage,
   canReveal,
@@ -44,6 +45,7 @@ export function ClientDetailView({
   renewals: ServiceRenewalDTO[];
   transactions: TransactionDTO[];
   works: WorkDTO[];
+  defaultHourlyRateCents: number | null;
   vaultReady: boolean;
   canManage: boolean;
   canReveal: boolean;
@@ -246,6 +248,7 @@ export function ClientDetailView({
               clientId={client.id}
               isReseller={isReseller}
               canManage={canManage}
+              defaultHourlyRateCents={defaultHourlyRateCents}
             />
           )}
           {tab === "renewals" && (

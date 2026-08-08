@@ -5,6 +5,7 @@ import { getVaultCredentials, isCredentialVaultReady } from "@/lib/client-vault"
 import { getServiceRenewals } from "@/lib/renewals";
 import { getTransactions } from "@/lib/finance";
 import { getWorks } from "@/lib/works";
+import { getRateSettings } from "@/lib/workspace-settings";
 import { ClientDetailView } from "@/components/azmin/client-detail-view";
 import type { TxStatus, TxType } from "@/lib/finance-core";
 
@@ -18,11 +19,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const client = await getClient(user.workspaceId, id);
   if (!client) notFound();
 
-  const [credentials, renewals, transactions, works] = await Promise.all([
+  const [credentials, renewals, transactions, works, rate] = await Promise.all([
     getVaultCredentials(user.workspaceId, id),
     getServiceRenewals(user.workspaceId, id),
     getTransactions(user.workspaceId, { clientId: id }),
     getWorks(user.workspaceId, id),
+    getRateSettings(user.workspaceId),
   ]);
 
   return (
@@ -51,6 +53,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         startDate: w.startDate ? w.startDate.toISOString() : null,
         notes: w.notes, createdAt: w.createdAt.toISOString(),
       }))}
+      defaultHourlyRateCents={rate.hourlyRateCents}
       credentials={credentials}
       renewals={renewals.map((r) => ({
         id: r.id, service: r.service, clientName: r.clientName, clientEmail: r.clientEmail,

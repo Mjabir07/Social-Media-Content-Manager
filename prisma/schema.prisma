@@ -51,6 +51,16 @@ model Workspace {
   name      String
   createdAt DateTime @default(now())
 
+  // Cost-rate calculator (freelancer). hourlyRateCents is derived from the inputs
+  // and cached so it can prefill work orders: rate = (overhead + payTarget) /
+  // (workingHoursPerMonth * billablePercent/100). See lib/rate-catalog.
+  currency               String @default("AED")
+  monthlyOverheadCents   Int? // business costs: tools, subscriptions, rent…
+  monthlyPayTargetCents  Int? // what you want to take home each month
+  workingHoursPerMonth   Int? // hours you actually work per month
+  billablePercent        Int? // % of worked hours that are billable (utilization)
+  hourlyRateCents        Int? // computed hourly cost rate (prefills work orders)
+
   memberships         Membership[]
   skills              Skill[]
   people              Person[]
