@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Plus, Loader2, X, AlertTriangle, Trash2, TrendingUp } from "lucide-react";
+import { Wallet, ArrowDownCircle, ArrowUpCircle, Plus, Loader2, X, AlertTriangle, Trash2, TrendingUp, Check } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import {
   computeSummary, byCategory, byClient, byMonth, categoriesFor, categoryLabels, formatMoney,
@@ -61,6 +61,7 @@ export function FinanceView({
   const [vendor, setVendor] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState<TxStatus>("PAID");
+  const [method, setMethod] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,11 +97,18 @@ export function FinanceView({
     setSaving(true); setError(null);
     const res = await fetch("/api/finance", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, amountCents, currency, category, clientId: scopeClientId ?? clientId ?? null, vendor: vendor || null, description: description || null, date, status }),
+      body: JSON.stringify({ type, amountCents, currency, category, clientId: scopeClientId ?? clientId ?? null, vendor: vendor || null, description: description || null, date, status, method: method || null }),
     });
     setSaving(false);
     if (!res.ok) { setError((await res.json().catch(() => ({}))).error ?? "Could not save."); return; }
-    setAmount(""); setVendor(""); setDescription(""); setShowForm(false);
+    setAmount(""); setVendor(""); setDescription(""); setMethod(""); setShowForm(false);
+    await load({});
+  }
+
+  async function markPaid(id: string) {
+    setBusyId(id);
+    await fetch(`/api/finance/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "PAID" }) });
+    setBusyId(null);
     await load({});
   }
 
@@ -194,8 +202,17 @@ export function FinanceView({
               </label>
               <label className="text-xs font-bold text-[#476987]">Status
                 <select className={`mt-1 ${inputCls}`} value={status} onChange={(e) => setStatus(e.target.value as TxStatus)}>
-                  <option value="PAID">Paid</option>
-                  <option value="PENDING">Pending</option>
+                  <option value="PAID">Paid (money received)</option>
+                  <option value="PENDING">Pending (awaiting payment)</option>
+                </select>
+              </label>
+              <label className="text-xs font-bold text-[#476987]">Method
+                <select className={`mt-1 ${inputCls}`} value={method} onChange={(e) => setMethod(e.target.value)}>
+                  <option value="">—</option>
+                  <option value="Bank transfer">Bank transfer</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Card">Card</option>
+                  <option value="Online">Online</option>
                 </select>
               </label>
               <label className="text-xs font-bold text-[#476987] sm:col-span-2">Note
@@ -235,8 +252,13 @@ export function FinanceView({
                           {t.clientId && nameOf.get(t.clientId) && <span className="rounded-full bg-[#EAF1F9] px-2 py-0.5 text-[10px] font-bold text-[#5B7690]">{nameOf.get(t.clientId)}</span>}
                           {t.status === "PENDING" && <span className="rounded-full bg-[#FFF1D5] px-2 py-0.5 text-[10px] font-bold uppercase text-[#9A6711]">Pending</span>}
                         </div>
-                        <div className="text-xs text-[#8299AE]">{new Date(t.date).toLocaleDateString()}{t.vendor ? ` · ${t.vendor}` : ""}{t.description ? ` · ${t.description}` : ""}</div>
+                        <div className="text-xs text-[#8299AE]">{new Date(t.date).toLocaleDateString()}{t.vendor ? ` · ${t.vendor}` : ""}{t.method ? ` · ${t.method}` : ""}{t.description ? ` · ${t.description}` : ""}</div>
                       </div>
+                      {canManage && t.status === "PENDING" && (
+                        <button onClick={() => markPaid(t.id)} disabled={busyId === t.id} title="Mark as received (money in your account/cash)" className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#B8CCE0] bg-white px-2.5 py-1.5 text-[11px] font-bold text-[#087B54] transition hover:border-[#16A34A] disabled:opacity-60">
+                          {busyId === t.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Mark paid
+                        </button>
+                      )}
                       <span className={`shrink-0 font-bold ${income ? "text-[#087B54]" : "text-[#B4231C]"}`}>{income ? "+" : "−"}{formatMoney(t.amountCents, t.currency)}</span>
                       {canManage && <button onClick={() => remove(t.id)} disabled={busyId === t.id} className="shrink-0 text-[#C0362C] opacity-60 hover:opacity-100 disabled:opacity-30"><Trash2 size={14} /></button>}
                     </li>

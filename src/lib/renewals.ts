@@ -203,11 +203,13 @@ export async function markRenewed(workspaceId: string, id: string, createdById: 
   await prisma.renewal.updateMany({ where: { id, workspaceId }, data: { renewalDate: next, status: "ACTIVE" } });
   await prisma.notification.deleteMany({ where: { workspaceId, action: SERVICE_ACTION, targetId: id } });
 
+  // Client income is PENDING — clients pay later by bank transfer / cash, which
+  // you confirm with "Mark paid". Vendor cost is PAID (you already paid Google).
   if (row.amountCents && row.amountCents > 0) {
     await createTransaction(workspaceId, createdById, {
       type: "INCOME", amountCents: row.amountCents, currency: row.currency, category: "RENEWAL",
       clientId: row.clientId, renewalId: row.id, vendor: row.clientName,
-      description: `${row.service} renewal — ${row.clientName}`, date: paidOn, status: "PAID",
+      description: `${row.service} renewal — ${row.clientName}`, date: paidOn, status: "PENDING",
     });
   }
   if (row.costCents && row.costCents > 0) {
