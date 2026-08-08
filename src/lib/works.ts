@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createTransaction, updateTransaction, deleteTransaction } from "@/lib/finance";
-import { isWorkStatus, computeAmountCents, computeProfitCents, type WorkStatus } from "@/lib/works-catalog";
+import { isWorkStatus, computeAmountCents, computeCostCents, computeProfitCents, type WorkStatus } from "@/lib/works-catalog";
 
 /**
  * Works (DB access). Workspace-scoped, always tied to a client, soft-deleted.
@@ -18,6 +18,10 @@ export type WorkDTO = {
   unitPriceCents: number | null;
   amountCents: number | null;
   unitCostCents: number | null;
+  laborHours: number | null;
+  hourlyRateCents: number | null;
+  operationalCents: number | null;
+  hostingCents: number | null;
   costCents: number | null;
   profitCents: number | null;
   currency: string;
@@ -30,13 +34,16 @@ export type WorkDTO = {
 
 function toDTO(w: {
   id: string; clientId: string; title: string; serviceType: string | null; endCustomer: string | null;
-  quantity: number; unitPriceCents: number | null; amountCents: number | null; unitCostCents: number | null; costCents: number | null;
-  currency: string; status: string; invoiceTxnId: string | null; startDate: Date | null; notes: string | null; createdAt: Date;
+  quantity: number; unitPriceCents: number | null; amountCents: number | null; unitCostCents: number | null;
+  laborHours: number | null; hourlyRateCents: number | null; operationalCents: number | null; hostingCents: number | null;
+  costCents: number | null; currency: string; status: string; invoiceTxnId: string | null; startDate: Date | null; notes: string | null; createdAt: Date;
 }): WorkDTO {
   return {
     id: w.id, clientId: w.clientId, title: w.title, serviceType: w.serviceType, endCustomer: w.endCustomer,
     quantity: w.quantity, unitPriceCents: w.unitPriceCents, amountCents: w.amountCents,
-    unitCostCents: w.unitCostCents, costCents: w.costCents, profitCents: computeProfitCents(w.amountCents, w.costCents),
+    unitCostCents: w.unitCostCents, laborHours: w.laborHours, hourlyRateCents: w.hourlyRateCents,
+    operationalCents: w.operationalCents, hostingCents: w.hostingCents,
+    costCents: w.costCents, profitCents: computeProfitCents(w.amountCents, w.costCents),
     currency: w.currency, status: isWorkStatus(w.status) ? w.status : "ACTIVE", invoiced: w.invoiceTxnId != null,
     startDate: w.startDate, notes: w.notes, createdAt: w.createdAt,
   };
@@ -62,6 +69,10 @@ export type WorkInput = {
   quantity?: number | null;
   unitPriceCents?: number | null;
   unitCostCents?: number | null;
+  laborHours?: number | null;
+  hourlyRateCents?: number | null;
+  operationalCents?: number | null;
+  hostingCents?: number | null;
   currency?: string;
   status?: WorkStatus;
   startDate?: string | Date | null;
@@ -131,6 +142,10 @@ export async function createWork(workspaceId: string, createdById: string | null
   const quantity = Math.max(1, Math.round(input.quantity ?? 1));
   const unitPriceCents = input.unitPriceCents ?? null;
   const unitCostCents = input.unitCostCents ?? null;
+  const laborHours = input.laborHours ?? null;
+  const hourlyRateCents = input.hourlyRateCents ?? null;
+  const operationalCents = input.operationalCents ?? null;
+  const hostingCents = input.hostingCents ?? null;
 
   const created = await prisma.work.create({
     data: {
@@ -144,7 +159,11 @@ export async function createWork(workspaceId: string, createdById: string | null
       unitPriceCents,
       amountCents: computeAmountCents(quantity, unitPriceCents),
       unitCostCents,
-      costCents: computeAmountCents(quantity, unitCostCents),
+      laborHours,
+      hourlyRateCents,
+      operationalCents,
+      hostingCents,
+      costCents: computeCostCents({ quantity, unitCostCents, laborHours, hourlyRateCents, operationalCents, hostingCents }),
       currency: input.currency ?? "AED",
       status: isWorkStatus(input.status) ? input.status : "ACTIVE",
       startDate: normalizeDate(input.startDate),
@@ -174,17 +193,28 @@ export async function updateWork(workspaceId: string, id: string, createdById: s
   if (patch.startDate !== undefined) data.startDate = normalizeDate(patch.startDate);
   if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
 
-  // Recompute revenue/cost totals whenever quantity or either unit figure changes.
+  // Recompute revenue/cost totals whenever any input figure changes.
   const quantity = patch.quantity !== undefined ? Math.max(1, Math.round(patch.quantity ?? 1)) : existing.quantity;
   const unitPriceCents = patch.unitPriceCents !== undefined ? (patch.unitPriceCents ?? null) : existing.unitPriceCents;
   const unitCostCents = patch.unitCostCents !== undefined ? (patch.unitCostCents ?? null) : existing.unitCostCents;
+  const laborHours = patch.laborHours !== undefined ? (patch.laborHours ?? null) : existing.laborHours;
+  const hourlyRateCents = patch.hourlyRateCents !== undefined ? (patch.hourlyRateCents ?? null) : existing.hourlyRateCents;
+  const operationalCents = patch.operationalCents !== undefined ? (patch.operationalCents ?? null) : existing.operationalCents;
+  const hostingCents = patch.hostingCents !== undefined ? (patch.hostingCents ?? null) : existing.hostingCents;
   if (patch.quantity !== undefined) data.quantity = quantity;
   if (patch.unitPriceCents !== undefined) data.unitPriceCents = unitPriceCents;
   if (patch.unitCostCents !== undefined) data.unitCostCents = unitCostCents;
-  const qtyOrPriceChanged = patch.quantity !== undefined || patch.unitPriceCents !== undefined;
-  const qtyOrCostChanged = patch.quantity !== undefined || patch.unitCostCents !== undefined;
-  if (qtyOrPriceChanged) data.amountCents = computeAmountCents(quantity, unitPriceCents);
-  if (qtyOrCostChanged) data.costCents = computeAmountCents(quantity, unitCostCents);
+  if (patch.laborHours !== undefined) data.laborHours = laborHours;
+  if (patch.hourlyRateCents !== undefined) data.hourlyRateCents = hourlyRateCents;
+  if (patch.operationalCents !== undefined) data.operationalCents = operationalCents;
+  if (patch.hostingCents !== undefined) data.hostingCents = hostingCents;
+
+  const priceChanged = patch.quantity !== undefined || patch.unitPriceCents !== undefined;
+  const costChanged = patch.quantity !== undefined || patch.unitCostCents !== undefined ||
+    patch.laborHours !== undefined || patch.hourlyRateCents !== undefined ||
+    patch.operationalCents !== undefined || patch.hostingCents !== undefined;
+  if (priceChanged) data.amountCents = computeAmountCents(quantity, unitPriceCents);
+  if (costChanged) data.costCents = computeCostCents({ quantity, unitCostCents, laborHours, hourlyRateCents, operationalCents, hostingCents });
 
   await prisma.work.updateMany({ where: { id, workspaceId, deletedAt: null }, data });
   await syncFinance(workspaceId, createdById, id);

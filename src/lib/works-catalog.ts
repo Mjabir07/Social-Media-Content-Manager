@@ -44,6 +44,36 @@ export function computeAmountCents(quantity: number | null | undefined, unitCent
   return qty * Math.max(0, Math.round(unitCents));
 }
 
+// Labor cost = hours × hourly rate. 0 when either is missing.
+export function laborCostCents(laborHours: number | null | undefined, hourlyRateCents: number | null | undefined): number {
+  if (laborHours == null || hourlyRateCents == null) return 0;
+  return Math.max(0, Math.round(laborHours * hourlyRateCents));
+}
+
+export type CostParts = {
+  quantity?: number | null;
+  unitCostCents?: number | null; // per-unit vendor cost
+  laborHours?: number | null;
+  hourlyRateCents?: number | null;
+  operationalCents?: number | null;
+  hostingCents?: number | null;
+};
+
+// Grand total cost = vendor (qty × unit cost) + labor (hours × rate) +
+// operational + hosting. Returns null only when NO cost component was given at
+// all (so "no cost" stays distinct from a real zero).
+export function computeCostCents(p: CostParts): number | null {
+  const anyGiven =
+    p.unitCostCents != null || p.hourlyRateCents != null || p.laborHours != null ||
+    p.operationalCents != null || p.hostingCents != null;
+  if (!anyGiven) return null;
+  const vendor = computeAmountCents(p.quantity, p.unitCostCents) ?? 0;
+  const labor = laborCostCents(p.laborHours, p.hourlyRateCents);
+  const ops = Math.max(0, Math.round(p.operationalCents ?? 0));
+  const host = Math.max(0, Math.round(p.hostingCents ?? 0));
+  return vendor + labor + ops + host;
+}
+
 // Profit = revenue − cost. Cost missing counts as 0, so profit falls back to the
 // full amount. Null only when there's no revenue at all.
 export function computeProfitCents(amountCents: number | null | undefined, costCents: number | null | undefined): number | null {

@@ -7,6 +7,8 @@ import {
   worksTotalCents,
   computeAmountCents,
   computeProfitCents,
+  computeCostCents,
+  laborCostCents,
   WORK_STATUSES,
 } from "@/lib/works-catalog";
 
@@ -54,6 +56,29 @@ describe("computeAmountCents", () => {
   });
   it("is null when there is no unit price", () => {
     expect(computeAmountCents(3, null)).toBeNull();
+  });
+});
+
+describe("laborCostCents", () => {
+  it("is hours × hourly rate", () => {
+    expect(laborCostCents(2.5, 4000)).toBe(10000);
+  });
+  it("is 0 when hours or rate missing", () => {
+    expect(laborCostCents(null, 4000)).toBe(0);
+    expect(laborCostCents(2, null)).toBe(0);
+  });
+});
+
+describe("computeCostCents", () => {
+  it("sums vendor + labor + operational + hosting", () => {
+    // vendor 5×1200=6000, labor 2×4000=8000, ops 1000, hosting 500 = 15500
+    expect(computeCostCents({ quantity: 5, unitCostCents: 1200, laborHours: 2, hourlyRateCents: 4000, operationalCents: 1000, hostingCents: 500 })).toBe(15500);
+  });
+  it("is null when no cost component is given", () => {
+    expect(computeCostCents({ quantity: 5 })).toBeNull();
+  });
+  it("counts a single component", () => {
+    expect(computeCostCents({ hostingCents: 2500 })).toBe(2500);
   });
 });
 

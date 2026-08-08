@@ -20,6 +20,10 @@ export type WorkDTO = {
   unitPriceCents: number | null;
   amountCents: number | null;
   unitCostCents: number | null;
+  laborHours: number | null;
+  hourlyRateCents: number | null;
+  operationalCents: number | null;
+  hostingCents: number | null;
   costCents: number | null;
   profitCents: number | null;
   currency: string;
@@ -57,14 +61,27 @@ export function WorksView({
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [laborHrs, setLaborHrs] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [operational, setOperational] = useState("");
+  const [hosting, setHosting] = useState("");
   const [status, setStatus] = useState<WorkStatus>("ACTIVE");
   const [notes, setNotes] = useState("");
 
+  const toCents = (v: string) => (v ? Math.round(parseFloat(v) * 100) : null);
   const qtyNum = Math.max(1, Math.round(parseFloat(quantity) || 1));
-  const unitCents = unitPrice ? Math.round(parseFloat(unitPrice) * 100) : null;
-  const unitCostCentsNum = unitCost ? Math.round(parseFloat(unitCost) * 100) : null;
+  const unitCents = toCents(unitPrice);
+  const unitCostCentsNum = toCents(unitCost);
+  const laborHoursNum = laborHrs ? Math.max(0, parseFloat(laborHrs)) : null;
+  const hourlyRateCentsNum = toCents(hourlyRate);
+  const operationalCentsNum = toCents(operational);
+  const hostingCentsNum = toCents(hosting);
+
   const previewAmount = unitCents != null ? qtyNum * unitCents : null;
-  const previewCost = unitCostCentsNum != null ? qtyNum * unitCostCentsNum : null;
+  const vendorCost = unitCostCentsNum != null ? qtyNum * unitCostCentsNum : 0;
+  const laborCost = laborHoursNum != null && hourlyRateCentsNum != null ? Math.round(laborHoursNum * hourlyRateCentsNum) : 0;
+  const anyCost = unitCostCentsNum != null || hourlyRateCentsNum != null || laborHoursNum != null || operationalCentsNum != null || hostingCentsNum != null;
+  const previewCost = anyCost ? vendorCost + laborCost + (operationalCentsNum ?? 0) + (hostingCentsNum ?? 0) : null;
   const previewProfit = previewAmount != null ? previewAmount - (previewCost ?? 0) : null;
 
   async function refresh() {
@@ -73,7 +90,8 @@ export function WorksView({
   }
 
   function resetForm() {
-    setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setUnitCost(""); setStatus("ACTIVE"); setNotes("");
+    setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setUnitCost("");
+    setLaborHrs(""); setHourlyRate(""); setOperational(""); setHosting(""); setStatus("ACTIVE"); setNotes("");
     setShowForm(false); setError(null);
   }
 
@@ -85,6 +103,10 @@ export function WorksView({
     setQuantity(String(w.quantity || 1));
     setUnitPrice(w.unitPriceCents != null ? String(w.unitPriceCents / 100) : "");
     setUnitCost(w.unitCostCents != null ? String(w.unitCostCents / 100) : "");
+    setLaborHrs(w.laborHours != null ? String(w.laborHours) : "");
+    setHourlyRate(w.hourlyRateCents != null ? String(w.hourlyRateCents / 100) : "");
+    setOperational(w.operationalCents != null ? String(w.operationalCents / 100) : "");
+    setHosting(w.hostingCents != null ? String(w.hostingCents / 100) : "");
     setStatus(w.status);
     setNotes(w.notes ?? "");
     setError(null);
@@ -96,7 +118,12 @@ export function WorksView({
     setSaving(true);
     setError(null);
     const editing = editId !== null;
-    const body = { title, serviceType: serviceType || null, endCustomer: endCustomer || null, quantity: qtyNum, unitPriceCents: unitCents, unitCostCents: unitCostCentsNum, status, notes: notes || null, ...(editing ? {} : { clientId }) };
+    const body = {
+      title, serviceType: serviceType || null, endCustomer: endCustomer || null,
+      quantity: qtyNum, unitPriceCents: unitCents, unitCostCents: unitCostCentsNum,
+      laborHours: laborHoursNum, hourlyRateCents: hourlyRateCentsNum, operationalCents: operationalCentsNum, hostingCents: hostingCentsNum,
+      status, notes: notes || null, ...(editing ? {} : { clientId }),
+    };
     const res = await fetch(editing ? `/api/works/${editId}` : "/api/works", {
       method: editing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -172,15 +199,38 @@ export function WorksView({
             <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="0.00" />
           </label>
           <label className="text-xs font-bold text-[#476987]">
-            Unit cost <span className="font-normal text-[#93A9BF]">(you pay vendor)</span>
-            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" />
-          </label>
-          <label className="text-xs font-bold text-[#476987]">
             Status
             <select className={`mt-1 ${inputCls}`} value={status} onChange={(e) => setStatus(e.target.value as WorkStatus)}>
               {WORK_STATUSES.map((s) => <option key={s} value={s}>{workStatusMeta[s].label}</option>)}
             </select>
           </label>
+
+          <p className="sm:col-span-2 -mb-1 mt-1 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#8A5A0B]">Your cost (for profit)</p>
+          <label className="text-xs font-bold text-[#476987]">
+            Vendor unit cost <span className="font-normal text-[#93A9BF]">(× qty)</span>
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" />
+          </label>
+          <label className="text-xs font-bold text-[#476987]">
+            Operational cost
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={operational} onChange={(e) => setOperational(e.target.value)} placeholder="0.00" />
+          </label>
+          <label className="text-xs font-bold text-[#476987]">
+            Your time <span className="font-normal text-[#93A9BF]">(hours)</span>
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.25" value={laborHrs} onChange={(e) => setLaborHrs(e.target.value)} placeholder="0" />
+          </label>
+          <label className="text-xs font-bold text-[#476987]">
+            Hourly rate
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="0.00" />
+          </label>
+          <label className="text-xs font-bold text-[#476987]">
+            Hosting cost
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={hosting} onChange={(e) => setHosting(e.target.value)} placeholder="0.00" />
+          </label>
+          {(laborCost > 0) && (
+            <div className="flex items-end text-xs font-semibold text-[#8A5A0B]">
+              Labor = {formatWorkAmount(laborCost, "AED")}
+            </div>
+          )}
           <div className="text-xs font-bold text-[#476987] sm:col-span-2">
             Totals <span className="font-normal text-[#93A9BF]">(auto: qty × unit)</span>
             <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-[#DDE8F2] bg-[#F7FAFE] px-3.5 py-2.5 text-sm">

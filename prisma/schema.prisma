@@ -160,8 +160,12 @@ model Work {
   quantity       Int       @default(1) // units / seats / licenses
   unitPriceCents Int? // price per unit (what you charge); amountCents = quantity * unitPriceCents
   amountCents    Int? // computed revenue total (kept for fast reads + finance sync)
-  unitCostCents  Int? // cost per unit (what you pay the vendor); costCents = quantity * unitCostCents
-  costCents      Int? // computed cost total → profit = amountCents - costCents
+  unitCostCents    Int? // cost per unit (what you pay the vendor); vendor cost = quantity * unitCostCents
+  laborHours       Float? // your time on this work
+  hourlyRateCents  Int? // your rate; labor cost = laborHours * hourlyRateCents
+  operationalCents Int? // operational overhead
+  hostingCents     Int? // hosting / infra cost
+  costCents        Int? // computed grand total = vendor + labor + operational + hosting → profit = amountCents - costCents
   currency       String    @default("AED")
   status         String    @default("ACTIVE")
   invoiceTxnId   String? // linked auto-synced Finance income line (PENDING)

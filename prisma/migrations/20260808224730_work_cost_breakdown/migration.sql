@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Work" ADD COLUMN "laborHours" DOUBLE PRECISION;
+ALTER TABLE "Work" ADD COLUMN "hourlyRateCents" INTEGER;
+ALTER TABLE "Work" ADD COLUMN "operationalCents" INTEGER;
+ALTER TABLE "Work" ADD COLUMN "hostingCents" INTEGER;
