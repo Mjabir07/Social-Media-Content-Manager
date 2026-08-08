@@ -13,6 +13,7 @@ const createSchema = z.object({
   endCustomer: z.string().trim().max(160).optional().nullable(),
   quantity: z.number().int().positive().max(1000000).optional().nullable(),
   unitPriceCents: z.number().int().nonnegative().optional().nullable(),
+  unitCostCents: z.number().int().nonnegative().optional().nullable(),
   currency: z.string().trim().length(3).optional(),
   status: z.enum(WORK_STATUSES).optional(),
   startDate: z.string().trim().optional().nullable(),

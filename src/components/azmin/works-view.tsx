@@ -19,6 +19,9 @@ export type WorkDTO = {
   quantity: number;
   unitPriceCents: number | null;
   amountCents: number | null;
+  unitCostCents: number | null;
+  costCents: number | null;
+  profitCents: number | null;
   currency: string;
   status: WorkStatus;
   invoiced: boolean;
@@ -53,12 +56,16 @@ export function WorksView({
   const [endCustomer, setEndCustomer] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
+  const [unitCost, setUnitCost] = useState("");
   const [status, setStatus] = useState<WorkStatus>("ACTIVE");
   const [notes, setNotes] = useState("");
 
   const qtyNum = Math.max(1, Math.round(parseFloat(quantity) || 1));
   const unitCents = unitPrice ? Math.round(parseFloat(unitPrice) * 100) : null;
+  const unitCostCentsNum = unitCost ? Math.round(parseFloat(unitCost) * 100) : null;
   const previewAmount = unitCents != null ? qtyNum * unitCents : null;
+  const previewCost = unitCostCentsNum != null ? qtyNum * unitCostCentsNum : null;
+  const previewProfit = previewAmount != null ? previewAmount - (previewCost ?? 0) : null;
 
   async function refresh() {
     const res = await fetch(`/api/works?clientId=${clientId}`, { cache: "no-store" });
@@ -66,7 +73,7 @@ export function WorksView({
   }
 
   function resetForm() {
-    setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setStatus("ACTIVE"); setNotes("");
+    setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setUnitCost(""); setStatus("ACTIVE"); setNotes("");
     setShowForm(false); setError(null);
   }
 
@@ -77,6 +84,7 @@ export function WorksView({
     setEndCustomer(w.endCustomer ?? "");
     setQuantity(String(w.quantity || 1));
     setUnitPrice(w.unitPriceCents != null ? String(w.unitPriceCents / 100) : "");
+    setUnitCost(w.unitCostCents != null ? String(w.unitCostCents / 100) : "");
     setStatus(w.status);
     setNotes(w.notes ?? "");
     setError(null);
@@ -88,7 +96,7 @@ export function WorksView({
     setSaving(true);
     setError(null);
     const editing = editId !== null;
-    const body = { title, serviceType: serviceType || null, endCustomer: endCustomer || null, quantity: qtyNum, unitPriceCents: unitCents, status, notes: notes || null, ...(editing ? {} : { clientId }) };
+    const body = { title, serviceType: serviceType || null, endCustomer: endCustomer || null, quantity: qtyNum, unitPriceCents: unitCents, unitCostCents: unitCostCentsNum, status, notes: notes || null, ...(editing ? {} : { clientId }) };
     const res = await fetch(editing ? `/api/works/${editId}` : "/api/works", {
       method: editing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,22 +168,28 @@ export function WorksView({
             <input className={`mt-1 ${inputCls}`} type="number" min="1" step="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="1" />
           </label>
           <label className="text-xs font-bold text-[#476987]">
-            Unit price
+            Unit price <span className="font-normal text-[#93A9BF]">(you charge)</span>
             <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="0.00" />
           </label>
-          <div className="text-xs font-bold text-[#476987]">
-            Amount <span className="font-normal text-[#93A9BF]">(auto: qty × unit)</span>
-            <div className="mt-1 flex items-center rounded-xl border border-[#DDE8F2] bg-[#F7FAFE] px-3.5 py-2.5 text-sm font-bold text-[#173A5C]">
-              {previewAmount != null ? formatWorkAmount(previewAmount, "AED") : <span className="font-normal text-[#93A9BF]">—</span>}
-              {previewAmount != null && previewAmount > 0 && <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-[#9A6711]">auto-invoiced · pending</span>}
-            </div>
-          </div>
+          <label className="text-xs font-bold text-[#476987]">
+            Unit cost <span className="font-normal text-[#93A9BF]">(you pay vendor)</span>
+            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" />
+          </label>
           <label className="text-xs font-bold text-[#476987]">
             Status
             <select className={`mt-1 ${inputCls}`} value={status} onChange={(e) => setStatus(e.target.value as WorkStatus)}>
               {WORK_STATUSES.map((s) => <option key={s} value={s}>{workStatusMeta[s].label}</option>)}
             </select>
           </label>
+          <div className="text-xs font-bold text-[#476987] sm:col-span-2">
+            Totals <span className="font-normal text-[#93A9BF]">(auto: qty × unit)</span>
+            <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-[#DDE8F2] bg-[#F7FAFE] px-3.5 py-2.5 text-sm">
+              <span className="text-[#173A5C]">Revenue <strong className="ml-1">{previewAmount != null ? formatWorkAmount(previewAmount, "AED") : "—"}</strong></span>
+              <span className="text-[#8A5A0B]">Cost <strong className="ml-1">{previewCost != null ? formatWorkAmount(previewCost, "AED") : "—"}</strong></span>
+              <span className="text-[#087B54]">Profit <strong className="ml-1">{previewProfit != null ? formatWorkAmount(previewProfit, "AED") : "—"}</strong></span>
+              {previewAmount != null && previewAmount > 0 && <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-[#9A6711]">auto-invoiced · pending</span>}
+            </div>
+          </div>
           <label className="text-xs font-bold text-[#476987] sm:col-span-2">
             Notes
             <input className={`mt-1 ${inputCls}`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Scope, deadline, contact…" />
@@ -216,6 +230,8 @@ export function WorksView({
                     {w.endCustomer && <span className="inline-flex items-center gap-1 text-[#5C3AAE]"><Building2 size={12} /> {w.endCustomer}</span>}
                     {w.unitPriceCents != null && <span className="text-[#72899E]">{w.quantity} × {formatWorkAmount(w.unitPriceCents, w.currency)}</span>}
                     {amt && <span className="text-[#234B70]">= {amt}</span>}
+                    {w.costCents != null && w.costCents > 0 && <span className="text-[#8A5A0B]">cost {formatWorkAmount(w.costCents, w.currency)}</span>}
+                    {w.profitCents != null && (w.costCents ?? 0) > 0 && <span className="font-bold text-[#087B54]">profit {formatWorkAmount(w.profitCents, w.currency)}</span>}
                     {w.invoiced && <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF1D5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#9A6711]"><Wallet size={11} /> Invoiced · pending</span>}
                   </div>
                   {w.notes && <p className="mt-1 text-xs text-[#7C93A8]">{w.notes}</p>}

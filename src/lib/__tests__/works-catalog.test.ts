@@ -6,6 +6,7 @@ import {
   formatWorkAmount,
   worksTotalCents,
   computeAmountCents,
+  computeProfitCents,
   WORK_STATUSES,
 } from "@/lib/works-catalog";
 
@@ -53,5 +54,17 @@ describe("computeAmountCents", () => {
   });
   it("is null when there is no unit price", () => {
     expect(computeAmountCents(3, null)).toBeNull();
+  });
+});
+
+describe("computeProfitCents", () => {
+  it("is revenue minus cost", () => {
+    expect(computeProfitCents(10000, 6000)).toBe(4000);
+  });
+  it("treats missing cost as zero", () => {
+    expect(computeProfitCents(10000, null)).toBe(10000);
+  });
+  it("is null with no revenue", () => {
+    expect(computeProfitCents(null, 6000)).toBeNull();
   });
 });

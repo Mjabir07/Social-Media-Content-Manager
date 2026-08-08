@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Work" ADD COLUMN "unitCostCents" INTEGER;
+ALTER TABLE "Work" ADD COLUMN "costCents" INTEGER;
+ALTER TABLE "Work" ADD COLUMN "costTxnId" TEXT;

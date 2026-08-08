@@ -35,10 +35,18 @@ export function worksTotalCents(works: Array<{ amountCents: number | null }>): n
   return works.reduce((sum, w) => sum + (w.amountCents ?? 0), 0);
 }
 
-// Total = quantity × unit price. Null when there is no unit price. Quantity
-// falls back to 1 and never goes below 1.
-export function computeAmountCents(quantity: number | null | undefined, unitPriceCents: number | null | undefined): number | null {
-  if (unitPriceCents == null) return null;
+// Total = quantity × per-unit cents. Null when there is no unit figure. Quantity
+// falls back to 1 and never goes below 1. Used for both revenue (unit price) and
+// cost (unit cost).
+export function computeAmountCents(quantity: number | null | undefined, unitCents: number | null | undefined): number | null {
+  if (unitCents == null) return null;
   const qty = Math.max(1, Math.round(quantity ?? 1));
-  return qty * Math.max(0, Math.round(unitPriceCents));
+  return qty * Math.max(0, Math.round(unitCents));
+}
+
+// Profit = revenue − cost. Cost missing counts as 0, so profit falls back to the
+// full amount. Null only when there's no revenue at all.
+export function computeProfitCents(amountCents: number | null | undefined, costCents: number | null | undefined): number | null {
+  if (amountCents == null) return null;
+  return amountCents - (costCents ?? 0);
 }

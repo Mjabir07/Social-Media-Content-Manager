@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createTransaction, updateTransaction, deleteTransaction } from "@/lib/finance";
-import { isWorkStatus, computeAmountCents, type WorkStatus } from "@/lib/works-catalog";
+import { isWorkStatus, computeAmountCents, computeProfitCents, type WorkStatus } from "@/lib/works-catalog";
 
 /**
  * Works (DB access). Workspace-scoped, always tied to a client, soft-deleted.
@@ -17,6 +17,9 @@ export type WorkDTO = {
   quantity: number;
   unitPriceCents: number | null;
   amountCents: number | null;
+  unitCostCents: number | null;
+  costCents: number | null;
+  profitCents: number | null;
   currency: string;
   status: WorkStatus;
   invoiced: boolean;
@@ -27,13 +30,14 @@ export type WorkDTO = {
 
 function toDTO(w: {
   id: string; clientId: string; title: string; serviceType: string | null; endCustomer: string | null;
-  quantity: number; unitPriceCents: number | null; amountCents: number | null; currency: string; status: string;
-  invoiceTxnId: string | null; startDate: Date | null; notes: string | null; createdAt: Date;
+  quantity: number; unitPriceCents: number | null; amountCents: number | null; unitCostCents: number | null; costCents: number | null;
+  currency: string; status: string; invoiceTxnId: string | null; startDate: Date | null; notes: string | null; createdAt: Date;
 }): WorkDTO {
   return {
     id: w.id, clientId: w.clientId, title: w.title, serviceType: w.serviceType, endCustomer: w.endCustomer,
-    quantity: w.quantity, unitPriceCents: w.unitPriceCents, amountCents: w.amountCents, currency: w.currency,
-    status: isWorkStatus(w.status) ? w.status : "ACTIVE", invoiced: w.invoiceTxnId != null,
+    quantity: w.quantity, unitPriceCents: w.unitPriceCents, amountCents: w.amountCents,
+    unitCostCents: w.unitCostCents, costCents: w.costCents, profitCents: computeProfitCents(w.amountCents, w.costCents),
+    currency: w.currency, status: isWorkStatus(w.status) ? w.status : "ACTIVE", invoiced: w.invoiceTxnId != null,
     startDate: w.startDate, notes: w.notes, createdAt: w.createdAt,
   };
 }
@@ -57,6 +61,7 @@ export type WorkInput = {
   endCustomer?: string | null;
   quantity?: number | null;
   unitPriceCents?: number | null;
+  unitCostCents?: number | null;
   currency?: string;
   status?: WorkStatus;
   startDate?: string | Date | null;
@@ -70,44 +75,62 @@ function normalizeDate(d: string | Date | null | undefined): Date | null {
 }
 
 type WorkRow = {
-  id: string; clientId: string; title: string; endCustomer: string | null; amountCents: number | null;
-  currency: string; invoiceTxnId: string | null;
+  id: string; clientId: string; title: string; endCustomer: string | null;
+  amountCents: number | null; costCents: number | null; currency: string;
+  invoiceTxnId: string | null; costTxnId: string | null;
 };
 
-function invoiceDescription(w: { title: string; endCustomer: string | null }): string {
-  return w.endCustomer ? `${w.title} (for ${w.endCustomer})` : w.title;
+function lineDescription(w: { title: string; endCustomer: string | null }, suffix = ""): string {
+  const base = w.endCustomer ? `${w.title} (for ${w.endCustomer})` : w.title;
+  return suffix ? `${base}${suffix}` : base;
 }
 
-// Keep the linked Finance income line in sync with the work's amount. Creates it
-// (PENDING) when there's an amount and none exists, updates it when the amount or
-// label changes, and removes it when the amount drops to zero. Returns the txn id
-// to store back on the work (or null).
-async function syncInvoice(workspaceId: string, createdById: string | null, w: WorkRow): Promise<string | null> {
-  const amount = w.amountCents ?? 0;
+// Keep one linked Finance line (income or expense) in sync with a work amount.
+// Creates it PENDING when there's a positive amount and none exists, updates it
+// when the amount/label changes, removes it when the amount is zero. Returns the
+// txn id to store back on the work (or null).
+async function syncFinanceLine(
+  workspaceId: string,
+  createdById: string | null,
+  w: WorkRow,
+  kind: "INCOME" | "EXPENSE",
+): Promise<string | null> {
+  const isIncome = kind === "INCOME";
+  const amount = (isIncome ? w.amountCents : w.costCents) ?? 0;
+  const existingId = isIncome ? w.invoiceTxnId : w.costTxnId;
+  const category = isIncome ? "SERVICE" : "VENDOR_COST";
+  const description = lineDescription(w, isIncome ? "" : " — vendor cost");
+
   if (amount > 0) {
-    if (w.invoiceTxnId) {
-      const updated = await updateTransaction(workspaceId, w.invoiceTxnId, {
-        amountCents: amount, currency: w.currency, description: invoiceDescription(w),
-      });
-      if (updated > 0) return w.invoiceTxnId; // still there
-      // txn was deleted out from under us — fall through and re-create
+    if (existingId) {
+      const updated = await updateTransaction(workspaceId, existingId, { amountCents: amount, currency: w.currency, description });
+      if (updated > 0) return existingId;
+      // txn deleted out from under us — re-create below
     }
     const txn = await createTransaction(workspaceId, createdById, {
-      type: "INCOME", amountCents: amount, currency: w.currency, category: "SERVICE",
-      clientId: w.clientId, vendor: null, description: invoiceDescription(w), date: new Date(), status: "PENDING",
+      type: kind, amountCents: amount, currency: w.currency, category,
+      clientId: w.clientId, vendor: null, description, date: new Date(), status: "PENDING",
     });
     return txn.id;
   }
-  // No amount → drop any existing invoice line.
-  if (w.invoiceTxnId) await deleteTransaction(workspaceId, w.invoiceTxnId);
+  if (existingId) await deleteTransaction(workspaceId, existingId);
   return null;
+}
+
+async function syncFinance(workspaceId: string, createdById: string | null, workId: string) {
+  const fresh = await prisma.work.findFirst({ where: { id: workId, workspaceId, deletedAt: null } });
+  if (!fresh) return;
+  const invoiceTxnId = await syncFinanceLine(workspaceId, createdById, fresh, "INCOME");
+  const costTxnId = await syncFinanceLine(workspaceId, createdById, fresh, "EXPENSE");
+  if (invoiceTxnId !== fresh.invoiceTxnId || costTxnId !== fresh.costTxnId) {
+    await prisma.work.update({ where: { id: workId }, data: { invoiceTxnId, costTxnId } });
+  }
 }
 
 export async function createWork(workspaceId: string, createdById: string | null, input: WorkInput) {
   const quantity = Math.max(1, Math.round(input.quantity ?? 1));
   const unitPriceCents = input.unitPriceCents ?? null;
-  const amountCents = computeAmountCents(quantity, unitPriceCents);
-  const currency = input.currency ?? "AED";
+  const unitCostCents = input.unitCostCents ?? null;
 
   const created = await prisma.work.create({
     data: {
@@ -119,21 +142,23 @@ export async function createWork(workspaceId: string, createdById: string | null
       endCustomer: input.endCustomer?.trim() || null,
       quantity,
       unitPriceCents,
-      amountCents,
-      currency,
+      amountCents: computeAmountCents(quantity, unitPriceCents),
+      unitCostCents,
+      costCents: computeAmountCents(quantity, unitCostCents),
+      currency: input.currency ?? "AED",
       status: isWorkStatus(input.status) ? input.status : "ACTIVE",
       startDate: normalizeDate(input.startDate),
       notes: input.notes?.trim() || null,
     },
   });
 
-  // Auto-create the pending invoice line and link it back.
-  const txnId = await syncInvoice(workspaceId, createdById, created);
-  if (txnId !== created.invoiceTxnId) {
-    await prisma.work.update({ where: { id: created.id }, data: { invoiceTxnId: txnId } });
-    created.invoiceTxnId = txnId;
-  }
-  return toDTO(created);
+  await syncFinance(workspaceId, createdById, created.id);
+  return getWorkById(workspaceId, created.id);
+}
+
+async function getWorkById(workspaceId: string, id: string): Promise<WorkDTO> {
+  const w = await prisma.work.findFirstOrThrow({ where: { id, workspaceId } });
+  return toDTO(w);
 }
 
 export async function updateWork(workspaceId: string, id: string, createdById: string | null, patch: Partial<WorkInput>) {
@@ -149,33 +174,29 @@ export async function updateWork(workspaceId: string, id: string, createdById: s
   if (patch.startDate !== undefined) data.startDate = normalizeDate(patch.startDate);
   if (patch.notes !== undefined) data.notes = patch.notes?.trim() || null;
 
-  // Recompute the amount whenever quantity or unit price changes.
+  // Recompute revenue/cost totals whenever quantity or either unit figure changes.
   const quantity = patch.quantity !== undefined ? Math.max(1, Math.round(patch.quantity ?? 1)) : existing.quantity;
   const unitPriceCents = patch.unitPriceCents !== undefined ? (patch.unitPriceCents ?? null) : existing.unitPriceCents;
+  const unitCostCents = patch.unitCostCents !== undefined ? (patch.unitCostCents ?? null) : existing.unitCostCents;
   if (patch.quantity !== undefined) data.quantity = quantity;
   if (patch.unitPriceCents !== undefined) data.unitPriceCents = unitPriceCents;
-  if (patch.quantity !== undefined || patch.unitPriceCents !== undefined) {
-    data.amountCents = computeAmountCents(quantity, unitPriceCents);
-  }
+  if (patch.unitCostCents !== undefined) data.unitCostCents = unitCostCents;
+  const qtyOrPriceChanged = patch.quantity !== undefined || patch.unitPriceCents !== undefined;
+  const qtyOrCostChanged = patch.quantity !== undefined || patch.unitCostCents !== undefined;
+  if (qtyOrPriceChanged) data.amountCents = computeAmountCents(quantity, unitPriceCents);
+  if (qtyOrCostChanged) data.costCents = computeAmountCents(quantity, unitCostCents);
 
   await prisma.work.updateMany({ where: { id, workspaceId, deletedAt: null }, data });
-
-  // Re-sync the linked invoice against the fresh row.
-  const fresh = await prisma.work.findFirst({ where: { id, workspaceId, deletedAt: null } });
-  if (fresh) {
-    const txnId = await syncInvoice(workspaceId, createdById, fresh);
-    if (txnId !== fresh.invoiceTxnId) {
-      await prisma.work.update({ where: { id }, data: { invoiceTxnId: txnId } });
-    }
-  }
+  await syncFinance(workspaceId, createdById, id);
   return 1;
 }
 
 export async function deleteWork(workspaceId: string, id: string) {
   const work = await prisma.work.findFirst({ where: { id, workspaceId, deletedAt: null } });
   if (!work) return 0;
-  await prisma.work.updateMany({ where: { id, workspaceId, deletedAt: null }, data: { deletedAt: new Date(), invoiceTxnId: null } });
-  // Remove the linked pending invoice — a deleted work order shouldn't keep billing.
+  await prisma.work.updateMany({ where: { id, workspaceId, deletedAt: null }, data: { deletedAt: new Date(), invoiceTxnId: null, costTxnId: null } });
+  // Remove the linked pending income + cost — a deleted work order shouldn't keep billing.
   if (work.invoiceTxnId) await deleteTransaction(workspaceId, work.invoiceTxnId);
+  if (work.costTxnId) await deleteTransaction(workspaceId, work.costTxnId);
   return 1;
 }

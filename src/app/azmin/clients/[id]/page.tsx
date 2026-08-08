@@ -43,7 +43,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       }}
       works={works.map((w) => ({
         id: w.id, clientId: w.clientId, title: w.title, serviceType: w.serviceType, endCustomer: w.endCustomer,
-        quantity: w.quantity, unitPriceCents: w.unitPriceCents, amountCents: w.amountCents, currency: w.currency,
+        quantity: w.quantity, unitPriceCents: w.unitPriceCents, amountCents: w.amountCents,
+        unitCostCents: w.unitCostCents, costCents: w.costCents, profitCents: w.profitCents, currency: w.currency,
         status: w.status, invoiced: w.invoiced,
         startDate: w.startDate ? w.startDate.toISOString() : null,
         notes: w.notes, createdAt: w.createdAt.toISOString(),
