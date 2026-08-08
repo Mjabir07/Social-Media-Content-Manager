@@ -123,7 +123,7 @@ export function ClientsView({
               Client type
               <select className={`mt-1 ${inputCls}`} value={type} onChange={(e) => setType(e.target.value)}>
                 <option value="DIRECT">Direct client</option>
-                <option value="RESELLER">Reseller (many works / end-customers)</option>
+                <option value="RESELLER">Reseller (many work orders / end-customers)</option>
               </select>
             </label>
             <label className="text-xs font-bold text-[#476987]">
@@ -194,7 +194,7 @@ export function ClientsView({
 
                     <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-[#526F8A]">
                       <span className="flex items-center gap-1"><KeyRound size={13} className="text-[#087CFA]" /> {c.credentialCount} cred{c.credentialCount === 1 ? "" : "s"}</span>
-                      <span className="flex items-center gap-1"><Briefcase size={13} className="text-[#0758C9]" /> {c.workCount} work{c.workCount === 1 ? "" : "s"}</span>
+                      <span className="flex items-center gap-1"><Briefcase size={13} className="text-[#0758C9]" /> {c.workCount} order{c.workCount === 1 ? "" : "s"}</span>
                       <span className="flex items-center gap-1"><CalendarClock size={13} className="text-[#5C3AAE]" /> {c.renewalCount} renewal{c.renewalCount === 1 ? "" : "s"}</span>
                     </div>
 

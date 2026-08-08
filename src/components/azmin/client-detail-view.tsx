@@ -166,7 +166,7 @@ export function ClientDetailView({
                 Client type
                 <select className={fieldCls} value={fType} onChange={(e) => setFType(e.target.value)}>
                   <option value="DIRECT">Direct client</option>
-                  <option value="RESELLER">Reseller (holds works for many end-customers)</option>
+                  <option value="RESELLER">Reseller (holds work orders for many end-customers)</option>
                 </select>
               </label>
               <label className="text-xs font-bold text-[#476987]">
@@ -215,7 +215,7 @@ export function ClientDetailView({
             <KeyRound size={16} /> Credentials <span className="rounded-full bg-white/25 px-1.5 text-xs">{client.credentialCount}</span>
           </button>
           <button onClick={() => setTab("works")} className={tabCls(tab === "works")}>
-            <Briefcase size={16} /> Works <span className="rounded-full bg-white/25 px-1.5 text-xs">{client.workCount}</span>
+            <Briefcase size={16} /> Work Orders <span className="rounded-full bg-white/25 px-1.5 text-xs">{client.workCount}</span>
           </button>
           <button onClick={() => setTab("renewals")} className={tabCls(tab === "renewals")}>
             <CalendarClock size={16} /> Renewals <span className="rounded-full bg-white/25 px-1.5 text-xs">{client.renewalCount}</span>

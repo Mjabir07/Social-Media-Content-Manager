@@ -96,7 +96,7 @@ export function WorksView({
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this work?")) return;
+    if (!confirm("Delete this work order?")) return;
     setBusyId(id);
     await fetch(`/api/works/${id}`, { method: "DELETE" });
     setBusyId(null);
@@ -120,17 +120,17 @@ export function WorksView({
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {canManage && !showForm && (
           <button onClick={() => { resetForm(); setShowForm(true); }} className="inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(8,124,250,.2)] transition hover:bg-[#076BE0]">
-            <Plus size={16} /> Add work
+            <Plus size={16} /> Add work order
           </button>
         )}
         {works.length > 0 && (
           <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#456784] shadow-[0_1px_4px_rgba(3,20,46,.05)]">
-            {works.length} work{works.length === 1 ? "" : "s"} · {formatWorkAmount(total, currency)}
+            {works.length} order{works.length === 1 ? "" : "s"} · {formatWorkAmount(total, currency)}
           </span>
         )}
         {isReseller && (
           <span className="inline-flex items-center gap-1 rounded-full bg-[#EFEBFB] px-3 py-1.5 text-xs font-bold text-[#5C3AAE]">
-            <Building2 size={13} /> Reseller — tag each work with its end-customer
+            <Building2 size={13} /> Reseller — tag each order with its end-customer
           </span>
         )}
       </div>
@@ -143,9 +143,9 @@ export function WorksView({
 
       {showForm && (
         <form onSubmit={handleSubmit} className="mb-6 grid gap-3 rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-[0_10px_28px_rgba(3,20,46,.05)] sm:grid-cols-2">
-          {editId && <p className="sm:col-span-2 -mb-1 text-xs font-bold text-[#5C3AAE]">Editing work</p>}
+          {editId && <p className="sm:col-span-2 -mb-1 text-xs font-bold text-[#5C3AAE]">Editing work order</p>}
           <label className="text-xs font-bold text-[#476987] sm:col-span-2">
-            Work / job title
+            Work order title
             <input className={`mt-1 ${inputCls}`} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Website redesign" required minLength={2} />
           </label>
           <label className="text-xs font-bold text-[#476987]">
@@ -153,7 +153,7 @@ export function WorksView({
             <input className={`mt-1 ${inputCls}`} value={serviceType} onChange={(e) => setServiceType(e.target.value)} placeholder="Website / SEO / Email setup" />
           </label>
           <label className="text-xs font-bold text-[#476987]">
-            End-customer {isReseller ? <span className="text-[#5C3AAE]">(who this work is for)</span> : <span className="font-normal text-[#93A9BF]">(optional)</span>}
+            End-customer {isReseller ? <span className="text-[#5C3AAE]">(who this order is for)</span> : <span className="font-normal text-[#93A9BF]">(optional)</span>}
             <input className={`mt-1 ${inputCls}`} value={endCustomer} onChange={(e) => setEndCustomer(e.target.value)} placeholder="End-company name" />
           </label>
           <label className="text-xs font-bold text-[#476987]">
@@ -173,7 +173,7 @@ export function WorksView({
           {error && <p className="sm:col-span-2 flex items-center gap-1.5 text-xs font-bold text-[#C0362C]"><AlertTriangle size={13} /> {error}</p>}
           <div className="flex items-center gap-2 sm:col-span-2">
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#076BE0] disabled:opacity-60">
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} {editId ? "Update work" : "Add work"}
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} {editId ? "Update work order" : "Add work order"}
             </button>
             <button type="button" onClick={resetForm} className="inline-flex items-center gap-1.5 rounded-xl border border-[#B8CCE0] bg-white px-4 py-2.5 text-sm font-bold text-[#234B70]">
               <X size={15} /> Cancel
@@ -185,8 +185,8 @@ export function WorksView({
       {works.length === 0 && !showForm ? (
         <div className="rounded-2xl border border-dashed border-[#AFC6DE] bg-[#F5F9FE] px-5 py-12 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF9FF] text-[#087CFA]"><Briefcase size={30} /></div>
-          <h3 className="mt-4 text-base font-bold text-[#173A5C]">No work logged yet</h3>
-          <p className="mt-1 text-sm text-[#526F8A]">{canManage ? "Add the first piece of work for this client." : "Ask an editor to add work."}</p>
+          <h3 className="mt-4 text-base font-bold text-[#173A5C]">No work orders yet</h3>
+          <p className="mt-1 text-sm text-[#526F8A]">{canManage ? "Add the first work order for this client." : "Ask an editor to add a work order."}</p>
         </div>
       ) : (
         <ul className="grid gap-3">
