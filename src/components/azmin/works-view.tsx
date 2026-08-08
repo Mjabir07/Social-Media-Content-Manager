@@ -65,6 +65,7 @@ export function WorksView({
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
   const [unitCost, setUnitCost] = useState("");
+  const [useLabor, setUseLabor] = useState(false); // charge my time on this order?
   const [laborHrs, setLaborHrs] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [operational, setOperational] = useState("");
@@ -83,8 +84,9 @@ export function WorksView({
 
   const previewAmount = unitCents != null ? qtyNum * unitCents : null;
   const vendorCost = unitCostCentsNum != null ? qtyNum * unitCostCentsNum : 0;
-  const laborCost = laborHoursNum != null && hourlyRateCentsNum != null ? Math.round(laborHoursNum * hourlyRateCentsNum) : 0;
-  const anyCost = unitCostCentsNum != null || hourlyRateCentsNum != null || laborHoursNum != null || operationalCentsNum != null || hostingCentsNum != null;
+  const laborCost = useLabor && laborHoursNum != null && hourlyRateCentsNum != null ? Math.round(laborHoursNum * hourlyRateCentsNum) : 0;
+  const laborGiven = useLabor && (laborHoursNum != null || hourlyRateCentsNum != null);
+  const anyCost = unitCostCentsNum != null || laborGiven || operationalCentsNum != null || hostingCentsNum != null;
   const previewCost = anyCost ? vendorCost + laborCost + (operationalCentsNum ?? 0) + (hostingCentsNum ?? 0) : null;
   const previewProfit = previewAmount != null ? previewAmount - (previewCost ?? 0) : null;
 
@@ -95,7 +97,7 @@ export function WorksView({
 
   function resetForm() {
     setEditId(null); setTitle(""); setServiceType(""); setEndCustomer(""); setQuantity("1"); setUnitPrice(""); setUnitCost("");
-    setLaborHrs(""); setHourlyRate(defaultRateStr); setOperational(""); setHosting(""); setStatus("ACTIVE"); setNotes("");
+    setUseLabor(false); setLaborHrs(""); setHourlyRate(defaultRateStr); setOperational(""); setHosting(""); setStatus("ACTIVE"); setNotes("");
     setShowForm(false); setError(null);
   }
 
@@ -107,8 +109,9 @@ export function WorksView({
     setQuantity(String(w.quantity || 1));
     setUnitPrice(w.unitPriceCents != null ? String(w.unitPriceCents / 100) : "");
     setUnitCost(w.unitCostCents != null ? String(w.unitCostCents / 100) : "");
+    setUseLabor(w.laborHours != null || w.hourlyRateCents != null);
     setLaborHrs(w.laborHours != null ? String(w.laborHours) : "");
-    setHourlyRate(w.hourlyRateCents != null ? String(w.hourlyRateCents / 100) : "");
+    setHourlyRate(w.hourlyRateCents != null ? String(w.hourlyRateCents / 100) : defaultRateStr);
     setOperational(w.operationalCents != null ? String(w.operationalCents / 100) : "");
     setHosting(w.hostingCents != null ? String(w.hostingCents / 100) : "");
     setStatus(w.status);
@@ -125,7 +128,8 @@ export function WorksView({
     const body = {
       title, serviceType: serviceType || null, endCustomer: endCustomer || null,
       quantity: qtyNum, unitPriceCents: unitCents, unitCostCents: unitCostCentsNum,
-      laborHours: laborHoursNum, hourlyRateCents: hourlyRateCentsNum, operationalCents: operationalCentsNum, hostingCents: hostingCentsNum,
+      laborHours: useLabor ? laborHoursNum : null, hourlyRateCents: useLabor ? hourlyRateCentsNum : null,
+      operationalCents: operationalCentsNum, hostingCents: hostingCentsNum,
       status, notes: notes || null, ...(editing ? {} : { clientId }),
     };
     const res = await fetch(editing ? `/api/works/${editId}` : "/api/works", {
@@ -222,21 +226,35 @@ export function WorksView({
             <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={operational} onChange={(e) => setOperational(e.target.value)} placeholder="0.00" />
           </label>
           <label className="text-xs font-bold text-[#476987]">
-            Your time <span className="font-normal text-[#93A9BF]">(hours)</span>
-            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.25" value={laborHrs} onChange={(e) => setLaborHrs(e.target.value)} placeholder="0" />
-          </label>
-          <label className="text-xs font-bold text-[#476987]">
-            Hourly rate
-            <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="0.00" />
-          </label>
-          <label className="text-xs font-bold text-[#476987]">
             Hosting cost
             <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={hosting} onChange={(e) => setHosting(e.target.value)} placeholder="0.00" />
           </label>
-          {(laborCost > 0) && (
-            <div className="flex items-end text-xs font-semibold text-[#8A5A0B]">
-              Labor = {formatWorkAmount(laborCost, "AED")}
-            </div>
+
+          <label className="sm:col-span-2 mt-1 flex cursor-pointer items-center gap-2 text-xs font-bold text-[#476987]">
+            <input
+              type="checkbox"
+              checked={useLabor}
+              onChange={(e) => { setUseLabor(e.target.checked); if (e.target.checked && !hourlyRate) setHourlyRate(defaultRateStr); }}
+              className="h-4 w-4 rounded border-[#B8CCE0] accent-[#087CFA]"
+            />
+            Charge my time on this order <span className="font-normal text-[#93A9BF]">(only some services need this)</span>
+          </label>
+          {useLabor && (
+            <>
+              <label className="text-xs font-bold text-[#476987]">
+                Your time <span className="font-normal text-[#93A9BF]">(hours)</span>
+                <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.25" value={laborHrs} onChange={(e) => setLaborHrs(e.target.value)} placeholder="0" />
+              </label>
+              <label className="text-xs font-bold text-[#476987]">
+                Hourly rate <span className="font-normal text-[#93A9BF]">(from settings)</span>
+                <input className={`mt-1 ${inputCls}`} type="number" min="0" step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} placeholder="0.00" />
+              </label>
+              {laborCost > 0 && (
+                <div className="flex items-end text-xs font-semibold text-[#8A5A0B] sm:col-span-2">
+                  Labor = {formatWorkAmount(laborCost, "AED")}
+                </div>
+              )}
+            </>
           )}
           <div className="text-xs font-bold text-[#476987] sm:col-span-2">
             Totals <span className="font-normal text-[#93A9BF]">(auto: qty × unit)</span>
