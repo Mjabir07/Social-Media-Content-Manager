@@ -94,6 +94,51 @@ model Workspace {
   transactions        Transaction[]
   devProjects         DevProject[]
   works               Work[]
+  quotes              Quote[]
+}
+
+// A sales quotation / estimate. Sent to a prospect (lead) or client; on Accept it
+// converts to a Client + Work Order + pending invoice. status: DRAFT | SENT |
+// ACCEPTED | DECLINED. Soft-deleted. leadId/clientId are app-scoped links (no FK).
+model Quote {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  leadId          String?
+  clientId        String?
+  number          Int // per-workspace display number
+  title           String
+  contactName     String
+  contactEmail    String?
+  contactPhone    String?
+  currency        String    @default("AED")
+  status          String    @default("DRAFT")
+  validUntil      DateTime?
+  notes           String?
+  subtotalCents   Int       @default(0) // sum of line totals
+  acceptedAt      DateTime?
+  convertedWorkId String? // Work Order created on accept
+  createdById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lines     QuoteLine[]
+
+  @@index([workspaceId, status, deletedAt])
+}
+
+model QuoteLine {
+  id             String @id @default(cuid())
+  quoteId        String
+  description    String
+  quantity       Int    @default(1)
+  unitPriceCents Int    @default(0)
+  order          Int    @default(0)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
 }
 
 // A money movement — the finance ledger. type INCOME (client charges) or
