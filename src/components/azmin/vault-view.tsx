@@ -145,6 +145,55 @@ export function VaultView({
 
   const inputCls = "w-full rounded-xl border border-[#B8CCE0] bg-white px-3.5 py-2.5 text-sm text-[#0f2137] outline-none placeholder:text-[#93A9BF] focus:border-[#087CFA]";
 
+  // One shared form, rendered either at the top (Add) or inline under the card
+  // being edited. Only one shows at a time, so a single element is reused.
+  const credentialForm = showForm ? (
+    <form onSubmit={handleSubmit} className="grid gap-3 rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-[0_10px_28px_rgba(3,20,46,.05)] sm:grid-cols-2">
+      {editId && <p className="sm:col-span-2 -mb-1 text-xs font-bold text-[#5C3AAE]">Editing credential</p>}
+      {!scopeClientName && (
+        <label className="text-xs font-bold text-[#476987]">
+          Client
+          <input className={`mt-1 ${inputCls}`} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client / project name" required minLength={2} />
+        </label>
+      )}
+      <label className="text-xs font-bold text-[#476987]">
+        Category
+        <select className={`mt-1 ${inputCls}`} value={category} onChange={(e) => setCategory(e.target.value as VaultCategory)}>
+          {VAULT_CATEGORIES.map((c) => <option key={c} value={c}>{vaultCategoryMeta[c].label}</option>)}
+        </select>
+      </label>
+      <label className="text-xs font-bold text-[#476987]">
+        Label
+        <input className={`mt-1 ${inputCls}`} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. GoDaddy domain panel / info@domain.com" required minLength={2} />
+      </label>
+      <label className="text-xs font-bold text-[#476987]">
+        Username / login
+        <input className={`mt-1 ${inputCls}`} value={username} onChange={(e) => setUsername(e.target.value)} placeholder="login id or email" autoComplete="off" />
+      </label>
+      <label className="text-xs font-bold text-[#476987]">
+        Password / secret
+        <input className={`mt-1 ${inputCls}`} type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={editId ? "leave blank to keep current" : "stored encrypted"} autoComplete="new-password" />
+      </label>
+      <label className="text-xs font-bold text-[#476987]">
+        Panel URL
+        <input className={`mt-1 ${inputCls}`} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
+      </label>
+      <label className="text-xs font-bold text-[#476987] sm:col-span-2">
+        Notes
+        <input className={`mt-1 ${inputCls}`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Seats, 2FA info, recovery email…" />
+      </label>
+      {error && <p className="sm:col-span-2 flex items-center gap-1.5 text-xs font-semibold text-[#C0362C]"><AlertTriangle size={13} /> {error}</p>}
+      <div className="flex items-center gap-2 sm:col-span-2">
+        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#076BE0] disabled:opacity-60">
+          {saving && <Loader2 size={15} className="animate-spin" />} {editId ? "Update credential" : "Save credential"}
+        </button>
+        <button type="button" onClick={resetForm} className="inline-flex items-center gap-1.5 rounded-xl border border-[#B8CCE0] bg-white px-4 py-2.5 text-sm font-bold text-[#234B70]">
+          <X size={15} /> Cancel
+        </button>
+      </div>
+    </form>
+  ) : null;
+
   const content = (
     <>
         {canManage && embedded && !showForm && (
@@ -165,52 +214,8 @@ export function VaultView({
           </p>
         )}
 
-        {showForm && (
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-3 rounded-2xl border border-[#C5D6E6] bg-white p-5 shadow-[0_10px_28px_rgba(3,20,46,.05)] sm:grid-cols-2">
-            {editId && <p className="sm:col-span-2 -mb-1 text-xs font-bold text-[#5C3AAE]">Editing credential</p>}
-            {!scopeClientName && (
-              <label className="text-xs font-bold text-[#476987]">
-                Client
-                <input className={`mt-1 ${inputCls}`} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Client / project name" required minLength={2} />
-              </label>
-            )}
-            <label className="text-xs font-bold text-[#476987]">
-              Category
-              <select className={`mt-1 ${inputCls}`} value={category} onChange={(e) => setCategory(e.target.value as VaultCategory)}>
-                {VAULT_CATEGORIES.map((c) => <option key={c} value={c}>{vaultCategoryMeta[c].label}</option>)}
-              </select>
-            </label>
-            <label className="text-xs font-bold text-[#476987]">
-              Label
-              <input className={`mt-1 ${inputCls}`} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. GoDaddy domain panel / info@domain.com" required minLength={2} />
-            </label>
-            <label className="text-xs font-bold text-[#476987]">
-              Username / login
-              <input className={`mt-1 ${inputCls}`} value={username} onChange={(e) => setUsername(e.target.value)} placeholder="login id or email" autoComplete="off" />
-            </label>
-            <label className="text-xs font-bold text-[#476987]">
-              Password / secret
-              <input className={`mt-1 ${inputCls}`} type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={editId ? "leave blank to keep current" : "stored encrypted"} autoComplete="new-password" />
-            </label>
-            <label className="text-xs font-bold text-[#476987]">
-              Panel URL
-              <input className={`mt-1 ${inputCls}`} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
-            </label>
-            <label className="text-xs font-bold text-[#476987] sm:col-span-2">
-              Notes
-              <input className={`mt-1 ${inputCls}`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Seats, 2FA info, recovery email…" />
-            </label>
-            {error && <p className="sm:col-span-2 flex items-center gap-1.5 text-xs font-semibold text-[#C0362C]"><AlertTriangle size={13} /> {error}</p>}
-            <div className="flex items-center gap-2 sm:col-span-2">
-              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#076BE0] disabled:opacity-60">
-                {saving && <Loader2 size={15} className="animate-spin" />} {editId ? "Update credential" : "Save credential"}
-              </button>
-              <button type="button" onClick={resetForm} className="inline-flex items-center gap-1.5 rounded-xl border border-[#B8CCE0] bg-white px-4 py-2.5 text-sm font-bold text-[#234B70]">
-                <X size={15} /> Cancel
-              </button>
-            </div>
-          </form>
-        )}
+        {/* Add form only at the top; edits render inline under their card. */}
+        {showForm && editId === null && <div className="mt-6">{credentialForm}</div>}
 
         <div className={`space-y-8 ${embedded ? "" : "mt-8"}`}>
           {groups.length === 0 ? (
@@ -282,6 +287,10 @@ export function VaultView({
                         </div>
 
                         {c.notes && <p className="mt-2 text-xs text-[#7C93A8]">{c.notes}</p>}
+
+                        {editId === c.id && showForm && (
+                          <div className="mt-3 border-t border-dashed border-[#CBDBEB] pt-3">{credentialForm}</div>
+                        )}
                       </li>
                     );
                   })}
