@@ -176,6 +176,10 @@ export async function sendQuote(workspaceId: string, id: string, createdById: st
   if (q.status === "DRAFT" || q.status === "DECLINED") {
     await prisma.quote.updateMany({ where: { id, workspaceId }, data: { status: "SENT" } });
   }
+  // Advance a linked lead into PROPOSAL when its quote goes out.
+  if (q.leadId) {
+    await prisma.lead.updateMany({ where: { id: q.leadId, workspaceId, stage: { in: ["NEW", "QUALIFIED"] } }, data: { stage: "PROPOSAL" } });
+  }
   void createdById;
   return { ok: true };
 }

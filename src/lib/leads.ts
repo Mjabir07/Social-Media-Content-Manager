@@ -3,6 +3,7 @@ import { dispatchTrigger } from "@/lib/automations";
 import { scoreLead, type LeadStage } from "@/lib/leads-catalog";
 import { createClient } from "@/lib/clients";
 import { createWork } from "@/lib/works";
+import { createQuote } from "@/lib/quotes";
 import { createNotifications } from "@/lib/notifications";
 import { sendViaChannel, type ConnectionRow } from "@/lib/channel-adapters";
 import { recordOutbound } from "@/lib/inbox";
@@ -104,6 +105,15 @@ export async function updateLead(
     },
   });
 
+  // Qualify → auto-draft a quote from the lead (once), ready to add lines + send.
+  if (data.stage === "QUALIFIED" && before.stage !== "QUALIFIED") {
+    try {
+      await draftQuoteForLead(workspaceId, id, actor);
+    } catch {
+      /* best-effort */
+    }
+  }
+
   // Win → bill: first time a lead reaches WON, run the conversion once.
   if (data.stage === "WON" && before.stage !== "WON" && !before.wonAt) {
     try {
@@ -113,6 +123,37 @@ export async function updateLead(
     }
   }
   return result.count;
+}
+
+// On QUALIFIED, create a DRAFT quote prefilled from the lead so the owner just
+// adds line items and sends. Skips if the lead already has a quote (no dupes).
+export async function draftQuoteForLead(workspaceId: string, leadId: string, actor: Actor | null) {
+  const lead = await prisma.lead.findFirst({ where: { id: leadId, workspaceId } });
+  if (!lead) return;
+  const existing = await prisma.quote.findFirst({ where: { workspaceId, leadId, deletedAt: null }, select: { id: true } });
+  if (existing) return;
+
+  const value = lead.valueCents ?? 0;
+  await createQuote(workspaceId, actor?.id ?? null, {
+    leadId,
+    title: `${lead.name} — proposal`,
+    contactName: lead.name,
+    contactEmail: lead.email,
+    contactPhone: lead.phone,
+    currency: lead.currency || "AED",
+    notes: lead.notes ?? null,
+    lines: [{ description: `${lead.name} — service`, quantity: 1, unitPriceCents: value > 0 ? value : 0 }],
+  });
+
+  if (actor) {
+    await createNotifications(actor, await ownerIds(workspaceId), {
+      action: "quote.drafted",
+      targetType: "lead",
+      targetId: leadId,
+      targetLabel: lead.name,
+      message: `qualified — draft quote created, add lines & send`,
+    });
+  }
 }
 
 // Money formatting for the invoice message (kept local + simple).
