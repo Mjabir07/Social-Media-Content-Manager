@@ -25,6 +25,37 @@ export async function resolveInboxWorkspace(channel: string): Promise<string | n
   return ws?.id ?? null;
 }
 
+// Log an OUTBOUND message we sent (invoice, welcome, etc.) into the inbox so the
+// owner can verify it went out. Upserts a conversation keyed by channel+contact
+// and appends a Message(direction: OUT) carrying the send status. No unread bump.
+export async function recordOutbound(workspaceId: string, event: {
+  channel: string;
+  contact: string; // phone (WhatsApp) or email — the conversation key
+  contactName?: string | null;
+  text: string;
+  status: string; // SENT | FAILED | SIMULATED | SKIPPED
+  messageExternalId?: string | null;
+}) {
+  const preview = event.text.slice(0, 140);
+  const conversation = await prisma.conversation.upsert({
+    where: { workspaceId_channel_externalId: { workspaceId, channel: event.channel, externalId: event.contact } },
+    create: {
+      workspaceId, channel: event.channel, externalId: event.contact,
+      contactName: event.contactName ?? null, contactHandle: event.contact,
+      status: "OPEN", unread: 0, lastMessageAt: new Date(), lastMessagePreview: preview,
+    },
+    update: {
+      lastMessageAt: new Date(), lastMessagePreview: preview,
+      ...(event.contactName ? { contactName: event.contactName } : {}),
+    },
+    select: { id: true },
+  });
+  await prisma.message.create({
+    data: { conversationId: conversation.id, workspaceId, direction: "OUT", body: event.text, status: event.status, externalId: event.messageExternalId ?? null },
+  });
+  return conversation.id;
+}
+
 // Upsert the conversation and append the inbound message. Returns the conversation id.
 export async function recordInbound(workspaceId: string, event: InboundMessage) {
   const preview = event.text.slice(0, 140);

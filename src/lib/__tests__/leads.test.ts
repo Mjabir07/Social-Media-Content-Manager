@@ -61,11 +61,14 @@ describe("scoping", () => {
   });
 
   it("scopes updates so a foreign id can never be written", async () => {
-    mocks.lead.updateMany.mockResolvedValue({ count: 0 });
+    // Foreign id isn't visible in this tenant → the pre-read returns nothing and
+    // no write (or win→bill conversion) ever happens.
+    mocks.lead.findFirst.mockResolvedValue(null);
     const count = await updateLead("tenant-a", "rival-lead", { stage: "WON" });
-    expect(mocks.lead.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.lead.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "rival-lead", workspaceId: "tenant-a" },
     }));
     expect(count).toBe(0);
+    expect(mocks.lead.updateMany).not.toHaveBeenCalled();
   });
 });

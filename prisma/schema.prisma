@@ -571,6 +571,10 @@ model Lead {
   notes         String?
   score         Int?
   aiSummary     String?
+  // Set when the lead is marked WON and converted (fires the win→bill flow once).
+  clientId      String? // Client created/linked from this lead
+  workId        String? // Work Order created for this lead
+  wonAt         DateTime?
   createdById   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/db";
 import { dispatchTrigger } from "@/lib/automations";
 import { scoreLead, type LeadStage } from "@/lib/leads-catalog";
+import { createClient } from "@/lib/clients";
+import { createWork } from "@/lib/works";
+import { createNotifications } from "@/lib/notifications";
+import { sendViaChannel, type ConnectionRow } from "@/lib/channel-adapters";
+import { recordOutbound } from "@/lib/inbox";
+import type { CurrentUser } from "@/lib/session";
+
+type Actor = Pick<CurrentUser, "id" | "name" | "avatarColor" | "workspaceId">;
 
 /**
  * Leads pipeline (DB access). Workspace-scoped throughout. Creating a lead fires
@@ -72,7 +80,11 @@ export async function updateLead(
   workspaceId: string,
   id: string,
   data: Partial<Omit<LeadInput, "companyName">> & { score?: number | null; aiSummary?: string | null },
+  actor: Actor | null = null,
 ) {
+  const before = await prisma.lead.findFirst({ where: { id, workspaceId }, select: { stage: true, wonAt: true } });
+  if (!before) return 0;
+
   const result = await prisma.lead.updateMany({
     where: { id, workspaceId },
     data: {
@@ -91,7 +103,102 @@ export async function updateLead(
       ...(data.aiSummary !== undefined ? { aiSummary: data.aiSummary } : {}),
     },
   });
+
+  // Win → bill: first time a lead reaches WON, run the conversion once.
+  if (data.stage === "WON" && before.stage !== "WON" && !before.wonAt) {
+    try {
+      await convertWonLead(workspaceId, id, actor);
+    } catch {
+      /* conversion is best-effort; the stage change itself still succeeds */
+    }
+  }
   return result.count;
+}
+
+// Money formatting for the invoice message (kept local + simple).
+function fmt(cents: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(cents / 100);
+}
+
+// The whole win→bill flow, fired once when a lead becomes WON:
+//   1. create a Client from the lead
+//   2. create a Work Order (amount = lead value) — this auto-posts a pending
+//      invoice to Finance (see lib/works)
+//   3. send the invoice on connected Email + WhatsApp
+//   4. log each send into the Inbox so the owner can verify it went out
+//   5. notify the owner
+export async function convertWonLead(workspaceId: string, leadId: string, actor: Actor | null) {
+  const lead = await prisma.lead.findFirst({ where: { id: leadId, workspaceId } });
+  if (!lead || lead.wonAt) return;
+
+  const createdById = actor?.id ?? null;
+  const currency = lead.currency || "AED";
+  const value = lead.valueCents ?? 0;
+
+  const client = await createClient(workspaceId, createdById, {
+    name: lead.name,
+    email: lead.email,
+    phone: lead.phone,
+    notes: lead.source ? `Won from lead · source: ${lead.source}` : "Won from lead",
+  });
+
+  const work = await createWork(workspaceId, createdById, {
+    clientId: client.id,
+    title: `${lead.name} — won deal`,
+    quantity: 1,
+    unitPriceCents: value > 0 ? value : null,
+    status: "ACTIVE",
+    notes: lead.notes ?? null,
+  });
+
+  await prisma.lead.updateMany({ where: { id: leadId, workspaceId }, data: { clientId: client.id, workId: work.id, wonAt: new Date() } });
+
+  // Build the invoice message and send it on any connected messaging channel.
+  const amount = value > 0 ? `\nAmount: ${fmt(value, currency)}` : "";
+  const message = `Hi ${lead.name},\n\nThank you for confirming. Please find your invoice for the agreed work.${amount}\n\nOnce payment is done we'll start right away.\n\nAZMIN Digital`;
+
+  await sendInvoiceOnChannel(workspaceId, "EMAIL", lead.email, lead.name, `Invoice — ${lead.name}\n\n${message}`);
+  await sendInvoiceOnChannel(workspaceId, "WHATSAPP", lead.phone, lead.name, message);
+
+  if (actor) {
+    await createNotifications(actor, await ownerIds(workspaceId), {
+      action: "lead.won",
+      targetType: "lead",
+      targetId: leadId,
+      targetLabel: lead.name,
+      message: `won — client + work order created${value > 0 ? ` (${fmt(value, currency)})` : ""}, invoice sent`,
+    });
+  }
+}
+
+async function ownerIds(workspaceId: string): Promise<string[]> {
+  const members = await prisma.membership.findMany({ where: { workspaceId, role: { in: ["OWNER", "ADMIN"] } }, select: { userId: true } });
+  return members.map((m) => m.userId);
+}
+
+// Send on one channel if it's connected and we have a recipient; log the result
+// (sent/failed/simulated) into the Inbox for verification.
+async function sendInvoiceOnChannel(workspaceId: string, channel: "EMAIL" | "WHATSAPP", recipient: string | null, contactName: string, text: string) {
+  if (!recipient) return;
+  const conn = (await prisma.channelConnection.findFirst({
+    where: { workspaceId, channel, status: "CONNECTED" },
+  })) as unknown as NonNullable<ConnectionRow> | null;
+
+  const result = await sendViaChannel({
+    action: channel === "EMAIL" ? "SEND_EMAIL" : "SEND_WHATSAPP",
+    channel,
+    connection: conn,
+    message: text,
+    recipient,
+  });
+
+  await recordOutbound(workspaceId, {
+    channel: channel === "EMAIL" ? "EMAIL" : "WHATSAPP",
+    contact: recipient,
+    contactName,
+    text,
+    status: result.status,
+  });
 }
 
 export async function deleteLead(workspaceId: string, id: string) {

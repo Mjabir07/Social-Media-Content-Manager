@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Lead" ADD COLUMN "clientId" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "workId" TEXT;
+ALTER TABLE "Lead" ADD COLUMN "wonAt" TIMESTAMP(3);

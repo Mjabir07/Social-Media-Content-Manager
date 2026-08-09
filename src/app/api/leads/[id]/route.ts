@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const parsed = patchSchema.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "Check the entered information." }, { status: 400 });
   const data = { ...parsed.data, email: parsed.data.email === "" ? null : parsed.data.email };
-  const count = await updateLead(g.user.workspaceId, id, data);
+  const count = await updateLead(g.user.workspaceId, id, data, g.user);
   if (count === 0) return new Response("Not found", { status: 404 });
   await logActivity(g.user, { action: "lead.updated", targetType: "lead", targetId: id });
   return Response.json({ ok: true });
