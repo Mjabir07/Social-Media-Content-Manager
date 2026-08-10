@@ -4,6 +4,16 @@
   "lifecycle": ["Assess", "Research", "Plan", "Approve", "Execute", "Verify", "Document", "Report", "Monitor/Renew"],
   "workflows": [
     {
+      "id": "service-catalogue-routing",
+      "category": "Revenue",
+      "name": "Service Catalogue and Lead Routing",
+      "trigger": "Agency catalogue installed or lead selects a service",
+      "outcome": "Validated opportunity routed to the correct commercial and delivery workflow",
+      "stages": ["Select service", "Validate", "Classify", "Route automation", "Qualify", "Scope", "Create engagement"],
+      "approval": "Pricing, proposal terms, bundle scope and delivery activation",
+      "document": "../modules/services-and-engagements.md"
+    },
+    {
       "id": "crm-sales",
       "category": "Revenue",
       "name": "CRM and Sales",

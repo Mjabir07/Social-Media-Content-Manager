@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Tag, Trash2, X } from "lucide-react";
+import { BookOpenCheck, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { PRICING_MODELS, formatServicePrice, pricingModelLabels, type PricingModel } from "@/lib/services-catalog";
 
@@ -83,6 +83,14 @@ export function ServicesView({ services, companies, canManage, userName, userEma
     router.refresh();
   }
 
+  async function installCatalogue() {
+    setBusy(true); setError("");
+    const res = await fetch("/api/services/install-catalogue", { method: "POST" });
+    setBusy(false);
+    if (!res.ok) { const data = await res.json().catch(() => ({})); setError(data.error || "Could not install the agency catalogue."); return; }
+    router.refresh();
+  }
+
   return (
     <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
       <header className="border-b border-[#C8D8EA] bg-white px-5 py-4 shadow-[0_1px_8px_rgba(3,20,46,.06)] sm:px-8">
@@ -106,11 +114,12 @@ export function ServicesView({ services, companies, canManage, userName, userEma
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[.15em] text-[#0758C9]">Phase 2 · Services</p>
             <h1 className="mt-1 font-display text-3xl font-bold tracking-[-.03em]">Service catalogue</h1>
-            <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Everything AZMIN and its companies sell or deliver. Shared items apply to every company; company-specific items stay with their company. Deals and commissions will attach to these.</p>
+            <p className="mt-1.5 max-w-2xl text-sm text-[#4C6A86]">Professional agency offerings used by leads, proposals, delivery workflows and agent routing. Install the standard catalogue, then customize pricing or add specialist services.</p>
           </div>
-          {canManage && (
+          {canManage && <div className="flex flex-wrap gap-2">
+            <button onClick={installCatalogue} disabled={busy} className="inline-flex items-center gap-2 rounded-xl border border-[#9AB6D1] bg-white px-4 py-3 text-sm font-bold text-[#0758C9] disabled:opacity-50"><BookOpenCheck size={16} aria-hidden /> Install agency catalogue</button>
             <button onClick={openNew} className="inline-flex items-center gap-2 rounded-xl bg-[#087CFA] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_26px_rgba(8,124,250,.2)]"><Plus size={16} aria-hidden /> Add service</button>
-          )}
+          </div>}
         </section>
 
         {error && !draft && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
@@ -118,8 +127,8 @@ export function ServicesView({ services, companies, canManage, userName, userEma
         {services.length === 0 ? (
           <div className="mt-8 rounded-2xl border-2 border-dashed border-[#AFC6DE] bg-[#F5F9FE] px-6 py-14 text-center">
             <h3 className="font-display text-xl font-bold">No services yet</h3>
-            <p className="mt-2 text-sm text-[#4C6A86]">Add the services AZMIN offers — automation builds, retainers, content packages, and more.</p>
-            {canManage && <button onClick={openNew} className="mt-5 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white">Add your first service</button>}
+            <p className="mt-2 text-sm text-[#4C6A86]">Install the professional catalogue for marketing, development, automation, cloud, hosting, managed IT and business systems.</p>
+            {canManage && <button onClick={installCatalogue} disabled={busy} className="mt-5 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">Install agency catalogue</button>}
           </div>
         ) : (
           <div className="mt-7 space-y-8">
@@ -168,7 +177,7 @@ export function ServicesView({ services, companies, canManage, userName, userEma
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2"><Field label="Service name"><input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={inputClass} placeholder="e.g. Make.com automation build" /></Field></div>
               <Field label="Category"><input value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} className={inputClass} placeholder="e.g. Automation" /></Field>
-              <Field label="Belongs to"><select value={draft.companyId} onChange={(e) => setDraft({ ...draft, companyId: e.target.value })} className={inputClass}><option value="">Shared (all companies)</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+              <Field label="Catalogue scope"><select value={draft.companyId} onChange={(e) => setDraft({ ...draft, companyId: e.target.value })} className={inputClass}><option value="">Agency-wide</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name} operating context</option>)}</select></Field>
               <Field label="Pricing model"><select value={draft.pricingModel} onChange={(e) => setDraft({ ...draft, pricingModel: e.target.value as PricingModel })} className={inputClass}>{PRICING_MODELS.map((m) => <option key={m} value={m}>{pricingModelLabels[m]}</option>)}</select></Field>
               <Field label="Unit (optional)"><input value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} className={inputClass} placeholder="e.g. per month" /></Field>
               <Field label="Price (blank = custom quote)"><input inputMode="decimal" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} className={inputClass} placeholder="e.g. 1500" /></Field>

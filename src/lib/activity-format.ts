@@ -39,6 +39,7 @@ export const ACTIONS = {
   "company.agent_updated": { category: "business", verb: "updated an AI agent for" },
   "company.agent_archived": { category: "business", verb: "archived an AI agent for" },
   "service.created": { category: "business", verb: "added service" },
+  "service.catalogue_installed": { category: "business", verb: "installed" },
   "service.updated": { category: "business", verb: "updated service" },
   "service.archived": { category: "business", verb: "archived service" },
   "connection.created": { category: "business", verb: "connected channel" },

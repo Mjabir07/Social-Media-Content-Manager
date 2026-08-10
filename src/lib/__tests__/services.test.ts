@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  service: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+  service: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), createMany: vi.fn(), updateMany: vi.fn() },
 }));
 vi.mock("@/lib/db", () => ({ prisma: { service: mocks.service } }));
 
 import {
   formatServicePrice,
+  installAgencyServiceCatalogue,
   getService,
   getServices,
   isPricingModel,
@@ -21,6 +22,14 @@ describe("pricing helpers", () => {
     expect(Object.keys(pricingModelLabels)).toContain("RETAINER");
     expect(isPricingModel("HOURLY")).toBe(true);
     expect(isPricingModel("BARTER")).toBe(false);
+  });
+
+  it("installs the canonical catalogue idempotently", async () => {
+    mocks.service.findMany.mockResolvedValue([]);
+    mocks.service.createMany.mockResolvedValue({ count: 62 });
+    const result = await installAgencyServiceCatalogue("tenant-a", "user-a");
+    expect(result.created).toBeGreaterThan(50);
+    expect(mocks.service.createMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.any(Array) }));
   });
 
   it("formats prices from minor units and shows a quote label for null", () => {

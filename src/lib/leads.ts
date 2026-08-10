@@ -44,6 +44,9 @@ export type LeadInput = {
   notes?: string | null;
   stage?: LeadStage;
   companyName?: string; // only for automation variables, not stored
+  serviceName?: string; // automation routing context, not stored
+  serviceCategory?: string;
+  serviceWorkflow?: string;
 };
 
 export async function createLead(workspaceId: string, createdById: string | null, input: LeadInput) {
@@ -72,7 +75,10 @@ export async function createLead(workspaceId: string, createdById: string | null
     workspaceId,
     companyId: input.companyId ?? undefined,
     trigger: "LEAD_CREATED",
-    variables: { name: lead.name, email: lead.email, phone: lead.phone, company: input.companyName ?? "" },
+    variables: {
+      name: lead.name, email: lead.email, phone: lead.phone, company: input.companyName ?? "",
+      service: input.serviceName ?? "", serviceCategory: input.serviceCategory ?? "", serviceWorkflow: input.serviceWorkflow ?? "",
+    },
   });
 
   return lead;
@@ -81,7 +87,7 @@ export async function createLead(workspaceId: string, createdById: string | null
 export async function updateLead(
   workspaceId: string,
   id: string,
-  data: Partial<Omit<LeadInput, "companyName">> & { score?: number | null; aiSummary?: string | null },
+  data: Partial<Omit<LeadInput, "companyName" | "serviceName" | "serviceCategory" | "serviceWorkflow">> & { score?: number | null; aiSummary?: string | null },
   actor: Actor | null = null,
 ) {
   const before = await prisma.lead.findFirst({ where: { id, workspaceId }, select: { stage: true, wonAt: true } });

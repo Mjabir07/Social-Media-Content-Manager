@@ -14,7 +14,7 @@ type Lead = {
   notes: string | null; stage: LeadStage; score: number | null; aiSummary: string | null;
   clientId: string | null; wonAt: string | null;
 };
-type Ref = { id: string; name: string };
+type Ref = { id: string; name: string; category?: string };
 
 type Draft = { name: string; email: string; phone: string; source: string; companyId: string; serviceId: string; partnershipId: string; value: string; notes: string };
 const emptyDraft: Draft = { name: "", email: "", phone: "", source: "", companyId: "", serviceId: "", partnershipId: "", value: "", notes: "" };
@@ -59,6 +59,7 @@ export function LeadsView({ leads, companies, services, partners, canManage, use
   const totalOpen = leads.filter((l) => stageMeta[l.stage].open).length;
   const won = leads.filter((l) => l.stage === "WON");
   const wonValue = won.reduce((s, l) => s + (l.valueCents ?? 0), 0);
+  const serviceCategories = Array.from(new Set(services.map((service) => service.category || "Other")));
 
   return (
     <main data-azmin-ui className="min-h-screen bg-[#EAF1F9] text-[#03142E]">
@@ -136,7 +137,7 @@ export function LeadsView({ leads, companies, services, partners, canManage, use
               <Field label="Source"><input value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value })} className={inputClass} placeholder="Website, WhatsApp, Referral…" /></Field>
               <Field label="Estimated value"><input inputMode="decimal" value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} className={inputClass} placeholder="e.g. 5000" /></Field>
               {companies.length > 0 && <Field label="Company"><select value={draft.companyId} onChange={(e) => setDraft({ ...draft, companyId: e.target.value })} className={inputClass}><option value="">— none —</option>{companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>}
-              {services.length > 0 && <Field label="Interested in"><select value={draft.serviceId} onChange={(e) => setDraft({ ...draft, serviceId: e.target.value })} className={inputClass}><option value="">— none —</option>{services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>}
+              {services.length > 0 && <Field label="Interested service"><select value={draft.serviceId} onChange={(e) => setDraft({ ...draft, serviceId: e.target.value })} className={inputClass}><option value="">Select service</option>{serviceCategories.map((category) => <optgroup key={category} label={category}>{services.filter((service) => (service.category || "Other") === category).map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}</optgroup>)}</select></Field>}
               {partners.length > 0 && <Field label="Referred by partner"><select value={draft.partnershipId} onChange={(e) => setDraft({ ...draft, partnershipId: e.target.value })} className={inputClass}><option value="">— none —</option>{partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}
               <div className="sm:col-span-2"><Field label="Notes"><textarea value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} className={inputClass + " min-h-24"} placeholder="What do they need?" /></Field></div>
             </div>

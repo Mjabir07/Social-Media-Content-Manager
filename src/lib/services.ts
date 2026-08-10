@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { ServiceInput } from "@/lib/services-catalog";
+import { AGENCY_SERVICE_CATALOGUE } from "@/lib/services-catalog";
 
 /**
  * Universal service catalogue (Phase 2, database access). Services are
@@ -71,4 +72,19 @@ export async function updateService(
 export async function archiveService(workspaceId: string, id: string) {
   const result = await prisma.service.updateMany({ where: { id, workspaceId }, data: { status: "ARCHIVED" } });
   return result.count;
+}
+
+export async function installAgencyServiceCatalogue(workspaceId: string, createdById: string | null) {
+  const existing = await prisma.service.findMany({ where: { workspaceId }, select: { name: true } });
+  const names = new Set(existing.map((item) => item.name.trim().toLocaleLowerCase()));
+  const missing = AGENCY_SERVICE_CATALOGUE.filter((item) => !names.has(item.name.toLocaleLowerCase()));
+  if (!missing.length) return { created: 0, total: existing.length };
+  const result = await prisma.service.createMany({
+    data: missing.map((item) => ({
+      name: item.name, category: item.category, description: item.description,
+      pricingModel: item.pricingModel, unit: item.unit,
+      workspaceId, createdById: createdById ?? undefined, priceCents: null, currency: "AED", companyId: null,
+    })),
+  });
+  return { created: result.count, total: existing.length + result.count };
 }

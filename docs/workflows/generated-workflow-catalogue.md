@@ -13,6 +13,7 @@ Assess → Research → Plan → Approve → Execute → Verify → Document →
 
 | Category | Workflow | Trigger | Outcome | Approval gate |
 | --- | --- | --- | --- | --- |
+| Revenue | [Service Catalogue and Lead Routing](../modules/services-and-engagements.md) | Agency catalogue installed or lead selects a service | Validated opportunity routed to the correct commercial and delivery workflow | Pricing, proposal terms, bundle scope and delivery activation |
 | Revenue | [CRM and Sales](agency-service-delivery.md) | New prospect or opportunity | Qualified, won/lost opportunity with complete evidence and next action | Sending proposals, commercial terms and external follow-ups |
 | Delivery | [Client Onboarding](agency-service-delivery.md) | Lead/deal marked won | Client and purchased service engagements ready for delivery | Agreement, billing, access and kickoff communication |
 | Digital Marketing & Branding | [Digital Marketing & Branding Delivery](../modules/digital-marketing-and-branding.md) | Marketing/branding service engagement activated | Approved campaigns delivered, measured and optimized | External profile changes, publishing, messaging and paid activation |
@@ -27,6 +28,10 @@ Assess → Research → Plan → Approve → Execute → Verify → Document →
 | Cross-cutting | [Reporting and Continuous Improvement](agency-service-delivery.md) | Reporting period closes or material event occurs | Source-backed findings, decisions and next-cycle actions | Client-facing report and material operating changes |
 
 ## Stage definitions
+
+### Service Catalogue and Lead Routing
+
+Select service → Validate → Classify → Route automation → Qualify → Scope → Create engagement
 
 ### CRM and Sales
 

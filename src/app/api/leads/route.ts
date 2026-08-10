@@ -3,6 +3,7 @@ import { guard } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 import { LEAD_STAGES, createLead, getLeads } from "@/lib/leads";
+import { getServiceDefinition } from "@/lib/services-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,12 +39,22 @@ export async function POST(req: Request) {
   }
   const d = parsed.data;
   let companyName: string | undefined;
+  let serviceName: string | undefined;
+  let serviceCategory: string | undefined;
+  let serviceWorkflow: string | undefined;
   if (d.companyId) {
     const company = await prisma.company.findFirst({ where: { id: d.companyId, workspaceId: g.user.workspaceId }, select: { id: true, name: true } });
     if (!company) return Response.json({ error: "Unknown company." }, { status: 400 });
     companyName = company.name;
   }
-  const lead = await createLead(g.user.workspaceId, g.user.id, { ...d, email: d.email || null, companyName });
+  if (d.serviceId) {
+    const service = await prisma.service.findFirst({ where: { id: d.serviceId, workspaceId: g.user.workspaceId, status: { not: "ARCHIVED" } }, select: { name: true, category: true } });
+    if (!service) return Response.json({ error: "Unknown service." }, { status: 400 });
+    serviceName = service.name;
+    serviceCategory = service.category;
+    serviceWorkflow = getServiceDefinition(service.name)?.workflowKey;
+  }
+  const lead = await createLead(g.user.workspaceId, g.user.id, { ...d, email: d.email || null, companyName, serviceName, serviceCategory, serviceWorkflow });
   await logActivity(g.user, { action: "lead.created", targetType: "lead", targetId: lead.id, targetLabel: lead.name });
   return Response.json(lead, { status: 201 });
 }

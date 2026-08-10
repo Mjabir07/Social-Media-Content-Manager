@@ -11,7 +11,7 @@ The CRM is an agency operating system. Modules support the complete client lifec
 | Client Brain | Approved client facts, brand context, requirements and instructions | Foundation |
 | Integrations & API Vault | Encrypted, owner-managed provider credentials | Foundation |
 | Skills and Agents | Reusable agent capabilities, runs, approvals and evidence | Foundation |
-| Services and Engagements | What was sold, scope, package, ownership, dates and commercial terms | High |
+| [Services and Engagements](services-and-engagements.md) | Professional sellable catalogue, lead routing, scope, ownership and commercial terms | High |
 | CRM and Sales | Leads, qualification, proposals, pipeline and follow-ups | High |
 | Projects and Tasks | Delivery, milestones, recurring work and approvals | High |
 | Digital Marketing & Branding | Strategy, brand, creative, SMM, SEO, ads, messaging and analytics | High |

@@ -29,7 +29,7 @@ export default async function LeadsPage() {
         clientId: l.clientId, wonAt: l.wonAt ? l.wonAt.toISOString() : null,
       }))}
       companies={companies.map((c) => ({ id: c.id, name: c.name }))}
-      services={services.map((s) => ({ id: s.id, name: s.name }))}
+      services={services.map((s) => ({ id: s.id, name: s.name, category: s.category }))}
       partners={partnerships.map((p) => ({ id: p.id, name: p.name || p.partnerCompany?.name || "Partner" }))}
       canManage={user.role === "OWNER" || user.role === "ADMIN" || user.role === "EDITOR"}
       userName={user.name}
