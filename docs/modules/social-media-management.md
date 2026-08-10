@@ -32,6 +32,10 @@ minimal data entry, while existing clients must also be onboardable directly.
 - Campaign and content-pillar data foundations.
 - Portfolio readiness and operational counts.
 - Activity evidence for onboarding.
+- Persistent Delivery Agent runs following Assess → Research → Plan → Approve →
+  Execute → Verify → Document → Continue.
+- An account workspace showing the current plan, sources, blockers, tasks,
+  approvals and evidence.
 
 Excluded from Phase 1:
 
@@ -111,6 +115,8 @@ See [ADR 0002](../decisions/0002-link-smm-client-and-company.md).
 - [x] Command Center shows brand, channel, campaign and publishing readiness.
 - [x] Publishing remains approval-controlled.
 - [ ] Account setup editor for goals, platforms, cadence and agent schedule.
+- [x] Delivery Agent creates a resumable onboarding plan and execution tasks.
+- [x] Plan approval and step evidence are retained.
 - [ ] Campaign and calendar management UI.
 - [ ] End-to-end database test against an isolated PostgreSQL test database.
 

@@ -14,7 +14,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Runtime queries use the pooled connection (DATABASE_URL). Schema migrations
   // (prisma migrate deploy) MUST use a direct, non-pooled connection — pgbouncer
   // can't hold the advisory lock migrate needs (Neon "-pooler" host → P1002).
@@ -54,12 +54,12 @@ model Workspace {
   // Cost-rate calculator (freelancer). hourlyRateCents is derived from the inputs
   // and cached so it can prefill work orders: rate = (overhead + payTarget) /
   // (workingHoursPerMonth * billablePercent/100). See lib/rate-catalog.
-  currency               String @default("AED")
-  monthlyOverheadCents   Int? // business costs: tools, subscriptions, rent…
-  monthlyPayTargetCents  Int? // what you want to take home each month
-  workingHoursPerMonth   Int? // hours you actually work per month
-  billablePercent        Int? // % of worked hours that are billable (utilization)
-  hourlyRateCents        Int? // computed hourly cost rate (prefills work orders)
+  currency              String @default("AED")
+  monthlyOverheadCents  Int? // business costs: tools, subscriptions, rent…
+  monthlyPayTargetCents Int? // what you want to take home each month
+  workingHoursPerMonth  Int? // hours you actually work per month
+  billablePercent       Int? // % of worked hours that are billable (utilization)
+  hourlyRateCents       Int? // computed hourly cost rate (prefills work orders)
 
   memberships         Membership[]
   skills              Skill[]
@@ -98,6 +98,8 @@ model Workspace {
   smmWorkspaces       SmmWorkspace[]
   smmCampaigns        SmmCampaign[]
   smmContentPillars   SmmContentPillar[]
+  smmWorkflowRuns     SmmWorkflowRun[]
+  smmWorkflowSteps    SmmWorkflowStep[]
 }
 
 // A sales quotation / estimate. Sent to a prospect (lead) or client; on Accept it
@@ -210,31 +212,31 @@ model Client {
 // for — while the bill still goes to the parent client. status: LEAD | ACTIVE |
 // DELIVERED | CLOSED. Soft-deleted.
 model Work {
-  id          String    @id @default(cuid())
-  workspaceId String
-  clientId    String
-  title          String
-  serviceType    String? // e.g. "Website", "SEO", "Google Workspace setup"
-  endCustomer    String? // reseller's end-company this work is for (free text)
-  quantity       Int       @default(1) // units / seats / licenses
-  unitPriceCents Int? // price per unit (what you charge); amountCents = quantity * unitPriceCents
-  amountCents    Int? // computed revenue total (kept for fast reads + finance sync)
+  id               String    @id @default(cuid())
+  workspaceId      String
+  clientId         String
+  title            String
+  serviceType      String? // e.g. "Website", "SEO", "Google Workspace setup"
+  endCustomer      String? // reseller's end-company this work is for (free text)
+  quantity         Int       @default(1) // units / seats / licenses
+  unitPriceCents   Int? // price per unit (what you charge); amountCents = quantity * unitPriceCents
+  amountCents      Int? // computed revenue total (kept for fast reads + finance sync)
   unitCostCents    Int? // cost per unit (what you pay the vendor); vendor cost = quantity * unitCostCents
   laborHours       Float? // your time on this work
   hourlyRateCents  Int? // your rate; labor cost = laborHours * hourlyRateCents
   operationalCents Int? // operational overhead
   hostingCents     Int? // hosting / infra cost
   costCents        Int? // computed grand total = vendor + labor + operational + hosting → profit = amountCents - costCents
-  currency       String    @default("AED")
-  status         String    @default("ACTIVE")
-  invoiceTxnId   String? // linked auto-synced Finance income line (PENDING)
-  costTxnId      String? // linked auto-synced Finance expense line (PENDING)
-  startDate      DateTime?
-  notes          String?
-  createdById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  currency         String    @default("AED")
+  status           String    @default("ACTIVE")
+  invoiceTxnId     String? // linked auto-synced Finance income line (PENDING)
+  costTxnId        String? // linked auto-synced Finance expense line (PENDING)
+  startDate        DateTime?
+  notes            String?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -281,30 +283,30 @@ model VaultCredential {
 // invoice at -30d, nudges at -15d / -7d, final at -1d (see renewals-core).
 // status: ACTIVE | RENEWED | CANCELLED. Soft-deleted (deletedAt).
 model Renewal {
-  id          String    @id @default(cuid())
-  workspaceId String
-  clientId    String? // link to the Client hub record
-  service     String // e.g. "Google Workspace"
-  clientName  String // denormalized label (also works standalone)
-  clientEmail String?
-  amountCents Int? // what you CHARGE the client (income)
-  costCents   Int? // what you PAY the vendor (expense) — enables profit auto-calc
-  vendor      String? // who you pay, e.g. "Google"
-  currency    String    @default("AED")
-  renewalDate DateTime
-  status      String    @default("ACTIVE")
+  id            String    @id @default(cuid())
+  workspaceId   String
+  clientId      String? // link to the Client hub record
+  service       String // e.g. "Google Workspace"
+  clientName    String // denormalized label (also works standalone)
+  clientEmail   String?
+  amountCents   Int? // what you CHARGE the client (income)
+  costCents     Int? // what you PAY the vendor (expense) — enables profit auto-calc
+  vendor        String? // who you pay, e.g. "Google"
+  currency      String    @default("AED")
+  renewalDate   DateTime
+  status        String    @default("ACTIVE")
   // Billing lifecycle within the current cycle: NONE (nothing raised) -> RAISED
   // (invoice created, income booked PENDING) -> SENT (emailed to client) ->
   // payment received resets it to NONE and rolls renewalDate +1yr.
-  invoiceStatus String   @default("NONE") // NONE | RAISED | SENT
+  invoiceStatus String    @default("NONE") // NONE | RAISED | SENT
   invoicedAt    DateTime? // when the invoice was raised this cycle
   paidAt        DateTime? // when the last cycle's payment was received
-  incomeTxnId   String?   // the income Transaction booked for the open invoice
-  notes       String?
-  createdById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  incomeTxnId   String? // the income Transaction booked for the open invoice
+  notes         String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   client    Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -361,9 +363,10 @@ model Task {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  project   Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  smmStep   SmmWorkflowStep?
 
   @@index([workspaceId, status, deletedAt])
   @@index([projectId])
@@ -606,7 +609,7 @@ model Automation {
 // LEAD_CREATED automation trigger. `score`/`aiSummary` hold the AI/heuristic
 // qualification. stage: NEW | QUALIFIED | PROPOSAL | WON | LOST
 model Lead {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   workspaceId   String
   companyId     String?
   serviceId     String?
@@ -615,9 +618,9 @@ model Lead {
   email         String?
   phone         String?
   source        String?
-  stage         String   @default("NEW")
+  stage         String    @default("NEW")
   valueCents    Int?
-  currency      String   @default("AED")
+  currency      String    @default("AED")
   notes         String?
   score         Int?
   aiSummary     String?
@@ -626,14 +629,14 @@ model Lead {
   workId        String? // Work Order created for this lead
   wonAt         DateTime?
   createdById   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  company     Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  service     Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  partnership Partnership?        @relation(fields: [partnershipId], references: [id], onDelete: SetNull)
-  payments    CommissionPayment[]
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company      Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  service      Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  partnership  Partnership?        @relation(fields: [partnershipId], references: [id], onDelete: SetNull)
+  payments     CommissionPayment[]
   smmWorkspace SmmWorkspace?
 
   @@index([workspaceId, stage])
@@ -644,32 +647,33 @@ model Lead {
 // Client, isolated Company Brain, and optional originating won Lead. One client
 // and company can have only one SMM workspace, making onboarding idempotent.
 model SmmWorkspace {
-  id               String   @id @default(cuid())
-  workspaceId      String
-  companyId        String   @unique
-  clientId         String   @unique
-  leadId           String?  @unique
-  status           String   @default("ONBOARDING") // ONBOARDING | ACTIVE | PAUSED
-  onboardingStep   Int      @default(1)
-  timezone         String   @default("Asia/Dubai")
-  goals            String   @default("[]") // JSON string[]
-  platforms        String   @default("[]") // JSON string[]
-  postingCadence   String   @default("{}") // JSON Record<platform, posts/week>
-  approvalMode     String   @default("REQUIRED") // REQUIRED | TRUSTED_AUTO
-  agentEnabled     Boolean  @default(true)
-  agentMode        String   @default("DRAFT_ONLY") // DRAFT_ONLY | ASSISTED | AUTONOMOUS
-  nextAgentRunAt   DateTime?
-  lastAgentRunAt   DateTime?
-  createdById      String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String    @id @default(cuid())
+  workspaceId    String
+  companyId      String    @unique
+  clientId       String    @unique
+  leadId         String?   @unique
+  status         String    @default("ONBOARDING") // ONBOARDING | ACTIVE | PAUSED
+  onboardingStep Int       @default(1)
+  timezone       String    @default("Asia/Dubai")
+  goals          String    @default("[]") // JSON string[]
+  platforms      String    @default("[]") // JSON string[]
+  postingCadence String    @default("{}") // JSON Record<platform, posts/week>
+  approvalMode   String    @default("REQUIRED") // REQUIRED | TRUSTED_AUTO
+  agentEnabled   Boolean   @default(true)
+  agentMode      String    @default("DRAFT_ONLY") // DRAFT_ONLY | ASSISTED | AUTONOMOUS
+  nextAgentRunAt DateTime?
+  lastAgentRunAt DateTime?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  client    Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  lead      Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  campaigns SmmCampaign[]
-  pillars   SmmContentPillar[]
+  workspace    Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client       Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead         Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  campaigns    SmmCampaign[]
+  pillars      SmmContentPillar[]
+  workflowRuns SmmWorkflowRun[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, nextAgentRunAt])
@@ -713,6 +717,68 @@ model SmmContentPillar {
 
   @@unique([smmWorkspaceId, name])
   @@index([workspaceId, active])
+}
+
+// A durable SMM agent execution. type starts with ONBOARDING; the same lifecycle
+// later supports AUDIT, STRATEGY, CONTENT, ENGAGEMENT and REPORTING.
+model SmmWorkflowRun {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  smmWorkspaceId String
+  type           String    @default("ONBOARDING")
+  status         String    @default("PLANNING") // PLANNING | AWAITING_APPROVAL | IN_PROGRESS | BLOCKED | COMPLETED | FAILED
+  objective      String
+  contextJson    String    @default("{}")
+  researchJson   String    @default("{}")
+  planJson       String    @default("{}")
+  summary        String?
+  nextAction     String?
+  lastError      String?
+  planVersion    Int       @default(1)
+  approvedById   String?
+  approvedAt     DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  smmWorkspace SmmWorkspace      @relation(fields: [smmWorkspaceId], references: [id], onDelete: Cascade)
+  steps        SmmWorkflowStep[]
+
+  @@index([workspaceId, status, createdAt])
+  @@index([smmWorkspaceId, type, createdAt])
+}
+
+model SmmWorkflowStep {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  runId            String
+  key              String
+  title            String
+  description      String?
+  category         String
+  executionMode    String // AUTOMATIC | APPROVAL | MANUAL | API
+  status           String    @default("PLANNED") // PLANNED | READY | WAITING_APPROVAL | IN_PROGRESS | BLOCKED | DONE | SKIPPED
+  order            Int       @default(0)
+  requiresApproval Boolean   @default(false)
+  taskId           String?   @unique
+  outputJson       String    @default("{}")
+  evidenceJson     String    @default("{}")
+  blockingReason   String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  run       SmmWorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  task      Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@unique([runId, key])
+  @@index([workspaceId, status])
+  @@index([runId, order])
 }
 
 // Phase 8-style multi-platform publishing. Write a post once; it fans out to
