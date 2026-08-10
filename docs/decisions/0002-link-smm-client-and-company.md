@@ -1,9 +1,11 @@
 # ADR 0002: Link SMM Client and Company Context
 
-**Status:** Implemented  
+**Status:** Superseded by ADR 0004
 **Date:** 2026-08-10
 
 ## Context
+
+> This decision documents the initial implementation. Its mandatory Client-to-Company mapping is no longer the target architecture.
 
 `Client` is the commercial hub for work, finance and renewals. `Company` is the
 isolated brand and AI context used by content, connections and publishing. SMM

@@ -2,17 +2,17 @@
 
 ## Architectural model
 
-AZMIN OS is the business control plane. Specialist systems continue to own the
-technical data they are designed to manage.
+AZMIN Digital OS is the agency business control plane. Specialist systems retain
+the technical data they are designed to manage.
 
 | Responsibility | Source of truth |
 | --- | --- |
-| Companies, projects, tasks, services and finance | AZMIN PostgreSQL database |
+| Agency, clients, engagements, projects, tasks, services and finance | AZMIN PostgreSQL database |
 | Source code and history | GitHub |
 | Local/agent execution | Temporary Git worktree or isolated cloud workspace |
 | Production and preview deployments | Vercel or configured hosting provider |
 | Application data | Project-specific managed database |
-| Secrets and credentials | Infisical or another approved secrets manager |
+| Secrets and credentials | Encrypted API Vault/approved secrets manager |
 | Client documents and media | S3-compatible object storage |
 | Social publishing | Approved publishing provider/official APIs |
 | Monitoring telemetry | AZMIN Pulse and connected monitoring providers |
@@ -20,52 +20,52 @@ technical data they are designed to manage.
 AZMIN stores provider IDs, metadata and audit records. It does not copy complete
 repositories or raw credentials into its relational database.
 
-## Tenant and company hierarchy
+## Tenant, client and service hierarchy
 
 ```text
 Platform
-└── Tenant (AZMIN initially; SaaS customer later)
-    ├── Headquarters workspace
-    └── Companies
-        ├── Own brand
-        ├── Client
-        ├── Partner
-        └── Joint venture
+└── Workspace / Tenant (AZMIN initially; SaaS agency later)
+    ├── Agency Profile and optional operating contexts
+    ├── Leads and clients
+    │   └── Service engagements
+    │       └── Projects, tasks, evidence and renewals
+    └── Team, integrations, agents, finance and audit
 ```
 
-All business records carry a `tenantId`. Company-owned records also carry a
-`companyId`. Authorization must enforce these boundaries on the server, not only
-hide information in the interface.
+All business records carry a tenant/workspace boundary. Client delivery records
+also carry a Client or Service Engagement boundary. Optional Company records are
+reserved for own brands, employer contexts, partners and joint ventures. An
+ordinary client must not automatically create a Company. Authorization enforces
+these boundaries on the server.
 
 ## Core entities
 
-- Tenant, User and Membership
-- Company, CompanyRelationship and BrandProfile
-- KnowledgeSource, SkillDefinition and AgentProfile
-- ClientService, Lead, Deal and PartnershipAgreement
-- CommissionRecord, Project and Task
-- DevelopmentProject, RepositoryConnection and DeploymentTarget
-- DatabaseResource, InfrastructureResource, DomainResource and EmailService
-- Subscription, Invoice, Payment, Expense and Renewal
-- ContentAsset, AutomationRun, AgentRun and ApprovalRequest
-- SecretReference and AuditEvent
+- Workspace/Tenant, AgencyProfile, User and Membership
+- Optional OperatingContext and BrandProfile
+- Client, ClientKnowledge and ServiceEngagement
+- Lead, Deal, Quote and PartnershipAgreement
+- Project, Work, Task and ApprovalRequest
+- AgentProfile, AgentRun, WorkflowRun and AuditEvent
+- Campaign, ContentAsset, Conversation and PublishingTarget
+- InfrastructureResource, DomainResource and EmailService
+- Invoice, Payment, Expense, Subscription and Renewal
+- SecretReference and ProviderConnection
 
-## Company Brain
+## Agency and client knowledge
 
-Every company has an isolated Company Brain containing company facts, services,
-pricing, audiences, brand voice, brand assets, sales guidance, approved reference
-documents, content examples and company-specific skills.
-
-Company Brain retrieval must always be scoped by both tenant and company.
+The agency has workspace-wide operating knowledge. Every client/service engagement
+may have isolated client facts, requirements, brand voice, assets, audiences,
+approved sources and delivery instructions. Retrieval is scoped by tenant plus
+the applicable client/engagement. Optional operating-context knowledge remains
+separately scoped.
 
 ## Agent architecture
 
-The Agent Orchestrator selects an agent adapter, provides the minimum required
-context and records the result in a common format. Adapter targets may include
-Codex, Claude Code, Antigravity and local models.
+The Agency Orchestrator selects a specialist agent, provides the minimum required
+tenant/client/engagement context, assigns an approval policy and records the result.
 
-Each run records its objective, context, skill version, tools, permissions,
-actions, verification evidence, cost, duration, status and required next action.
+Each run records objective, context, sources, workflow/skill version, tools,
+permissions, actions, verification evidence, cost, duration, status and next action.
 
 ## Environment separation
 
@@ -73,3 +73,4 @@ Every development project supports Local, Development, Preview/Staging and
 Production environments. Credentials, databases and deployments remain separate.
 Production writes, migrations, merges and deployments require explicit approval.
 
+See [Agency Operating Model](agency-operating-model.md).

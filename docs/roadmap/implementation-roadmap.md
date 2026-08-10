@@ -2,130 +2,83 @@
 
 ## Delivery rule
 
-Only one phase is active at a time. Each phase must be useful on its own, tested
-with real AZMIN workflows and approved before the next phase begins.
+Each increment must be useful, tested with a real agency workflow, documented and approved before external or high-risk automation is activated.
 
-**Specify → Design → Build → Test → Use internally → Correct → Approve → Document**
+`Specify -> Design -> Build -> Test -> Use internally -> Correct -> Approve -> Document`
 
-## Phase 0 — Stabilize and document
+## Phase 0 - Stabilize and document
 
-- Repair reproducible local dependency installation
-- Pass typecheck, lint, unit tests and production build
-- Verify production configuration
-- Establish the documentation system
-- Record current MVP capabilities and technical debt
+- Reproducible install, tests and production build
+- Canonical agency operating model and workflow registry
+- Documentation generation and change checks in the build
+- Current implementation and technical-debt inventory
 
-Exit gate: a clean checkout can be installed, tested and built from documented steps.
+## Phase 1 - Workspace, clients and service foundation
 
-## Phase 1 — Multi-company foundation
+- Workspace/Tenant isolation
+- AZMIN headquarters and optional operating contexts
+- Clients, contacts and Client Brain
+- Universal service catalogue and Service Engagement ownership
+- Migrate the mistaken Company-per-client assumptions without data loss
+- Owner command center, permissions and audit events
 
-- AZMIN headquarters workspace
-- Company management and relationship types
-- Workspace/company switcher
-- Strict tenant/company isolation
-- Company Brand Profile and Brain
-- Skills and agent profiles
-- Owner overview dashboard
+Exit gate: one Workspace can manage multiple clients and multiple services without cross-client leakage or duplicate customer identities.
 
-Exit gate: create AZMIN plus two companies and prove no cross-company data or AI
-context leakage.
+## Phase 2 - CRM, sales and automated onboarding
 
-## Phase 2 — Services, CRM and partnerships
+- Leads, qualification, proposals, follow-ups and pipeline
+- Won-lead conversion into Client + Service Engagement
+- Service-specific onboarding checklists and agent plans
+- Partnerships, attribution and commissions
 
-- Universal service catalogue
-- Leads and sales pipeline
-- Partnership agreements and lead attribution
-- Deal values and commission rules
-- Commission earned, paid and outstanding
+## Phase 3 - Projects, tasks and agent operations
 
-Exit gate: capture a partner lead, close it, record payment and calculate a partial
-commission settlement correctly.
+- Projects, milestones, recurring tasks and dependencies
+- Universal agent loop, approvals, evidence and resumable runs
+- Client approvals, files, notes and activity history
+- Daily agency briefing and exception queue
 
-## Phase 3 — Projects and recurring operations
+## Phase 4 - Digital Marketing & Branding
 
-- Projects, milestones and tasks
-- Reusable project templates
-- Recurring tasks, deliverables and approvals
-- Files, notes and activity history
-- Daily owner briefing
+- Brand foundation, research and strategy
+- Campaigns, content, creative and asset workflows
+- SMM page setup, optimization, publishing, engagement and analytics
+- SEO, paid media, email/messaging and reputation workflows
+- Approval portal, calendar, reporting and optimization cycles
 
-Exit gate: complete one AZMIN internal project through the full workflow.
+## Phase 5 - Websites, applications and automation
 
-## Phase 4 — Finance and renewals
+- Requirements, specifications and delivery templates
+- Git, coding agents, QA, previews and controlled deployments
+- AI/workflow discovery, integration, testing and monitoring
+- Handover, maintenance and support records
 
-- Quotes, invoices, payments and expenses
-- Recurring billing records
-- Profitability by company/service/project
-- Domain, hosting, email and licence renewals
-- Reminder and escalation workflows
+## Phase 6 - Infrastructure, cloud and managed services
 
-Exit gate: reconcile one month of AZMIN service revenue, costs, commission income
-and outstanding balances.
+- Domains, DNS, hosting, SSL, servers and backups
+- Google Workspace, Microsoft 365, Zoho and hosted email
+- Managed IT assets, tickets, incidents, SLAs and maintenance
+- Health monitoring, alerts and operational runbooks
 
-## Phase 5 — Development Studio
+## Phase 7 - Finance, reporting and renewals
 
-- Development-project records
-- GitHub App integration
-- Repository and branch tracking
-- Vercel projects, previews, logs and deployments
-- Database and environment inventory
-- Infisical secret references
-- First coding-agent adapter
-- Tests, screenshots and approval evidence
+- Quotes, invoices, payments, expenses and profitability
+- Recurring billing, renewals and escalation workflows
+- Client, engagement, service and agency reporting
+- Executive dashboards and automated client reports
 
-Exit gate: an agent completes a small AZMIN feature on an isolated branch, produces
-a passing preview and deploys only after approval.
+## Phase 8 - SaaS commercialization
 
-## Phase 6 — Infrastructure, email and AZMIN Pulse
+- Tenant onboarding, plans, entitlements and metering
+- Billing, support controls, export, suspension and deletion
+- Security and operational-readiness review
 
-- Domains, DNS, hosting, SSL and backup tracking
-- Google Workspace, Microsoft 365, Zoho and hosted-email service records
-- AZMIN Pulse customer/subscription linkage
-- Health, incident and renewal dashboards
+## Definition of done
 
-Exit gate: track one real domain, host, email service and Pulse subscription from
-activation through renewal.
-
-## Phase 7 — Marketing and content automation
-
-- Company campaigns, content pillars and monthly plans
-- Copy, design, image and video workflows
-- Approval portal, calendar and performance reporting
-
-Exit gate: produce and approve a complete multi-platform campaign for AZMIN.
-
-## Phase 8 — Publishing and communications
-
-- Official social-platform/Postiz integration
-- Multi-channel scheduling, publishing and retries
-- Email automation and official WhatsApp Cloud API
-- Delivery status and failure alerts
-
-Exit gate: publish approved content and send an approved communication with a full
-audit trail.
-
-## Phase 9 — SaaS commercialization
-
-- Tenant onboarding, plans and entitlements
-- Usage metering and SaaS billing
-- Platform Admin dashboard
-- Support access controls
-- Data export, suspension and deletion
-- Operational/security readiness review
-
-Exit gate: onboard a test tenant with isolated data, controlled entitlements and
-accurate usage/billing records.
-
-## Definition of done for every phase
-
-- [ ] Scope and exclusions documented
-- [ ] User flows approved
-- [ ] Permissions enforced server-side
-- [ ] Unit, integration and relevant end-to-end tests pass
-- [ ] Mobile and desktop UX reviewed
-- [ ] Dashboard/reporting needs addressed
-- [ ] Security, isolation and audit behavior verified
-- [ ] Error, empty and loading states implemented
-- [ ] Documentation and decision records updated
-- [ ] Real AZMIN workflow used successfully
-
+- [ ] Scope, ownership, workflow and exclusions documented
+- [ ] Permissions and approval policy enforced server-side
+- [ ] Tests and relevant end-to-end scenarios pass
+- [ ] Security, tenant/client isolation and audit behavior verified
+- [ ] Error, empty, loading and recovery states implemented
+- [ ] Workflow registry, module docs, ADRs and operating instructions updated
+- [ ] Real AZMIN workflow completed successfully

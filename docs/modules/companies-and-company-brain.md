@@ -1,53 +1,27 @@
-# Companies and Company Brain  Increment 01
+# Operating Context and Legacy Company Brain
 
-**Status:** Implemented and locally verified  
-**Phase:** 01  Multi-company foundation  
-**Date:** 2026-07-28
+**Status:** Implemented foundation; semantic migration required
+**Last reviewed:** 2026-08-11
 
-## Delivered
+The existing `Company`, `BrandProfile` and `CompanyBrain` implementation provides tenant-scoped context, permissions and auditability. The original interpretation—creating a Company for every agency client—is superseded.
 
-- Tenant-scoped `Company`, `BrandProfile`, and `CompanyBrain` database models
-- Additive PostgreSQL migration
-- AZMIN Digital registered as the headquarters and first own-brand company
-- Companies dashboard with counts and company cards
-- Five-field company onboarding
-- Relationship types: own brand, agency client, sales/commission partner, joint venture
-- Company Overview, Brand Profile, and Company Brain editor
-- Server-side OWNER/ADMIN mutation permissions
-- Workspace-scoped reads and writes that return 404 for cross-tenant record IDs
-- Audit events for company creation, updates, and Company Brain updates
-- Automated tenant-isolation tests
+## Target use
 
-## Routes
+Company will be renamed or presented as optional Operating Context for the CRM operator's own brand, employer, partner or joint venture. Ordinary customers are Clients. Client knowledge and brand instructions belong in Client Brain or an engagement-scoped brand profile.
 
-| Route | Purpose |
-| --- | --- |
-| `/azmin/companies` | Company directory and onboarding |
-| `/azmin/companies/[id]` | Isolated company workspace |
-| `/api/companies` | Scoped company list and creation |
-| `/api/companies/[id]` | Scoped company, brand, and brain updates |
+## Existing routes
 
-## Isolation rule
+| Route | Current purpose | Migration direction |
+| --- | --- | --- |
+| `/azmin/companies` | Company directory | Operating-context directory |
+| `/azmin/companies/[id]` | Company profile and brain | Operating-context workspace |
+| `/api/companies` | Tenant-scoped CRUD | Preserve isolation; revise terminology and eligibility |
 
-A company is never retrieved only by its ID. Every server query also requires the
-authenticated user's `workspaceId`. Brand Profile and Company Brain are reachable
-only through that already-scoped company.
+## Invariants to preserve
 
-## Verification
+- Every query remains Workspace/Tenant scoped.
+- Cross-tenant identifiers return no data.
+- Mutations require server-side permissions and create audit events.
+- Existing records are mapped and reconciled before old relationships are removed.
 
-- Prisma migration deployed successfully
-- Prisma schema validation passed
-- TypeScript passed
-- ESLint passed
-- 55 unit tests passed
-- Production build passed
-- Local preview restored on port 3001
-
-## Remaining Phase 01 work
-
-- Persistent active-company selector shared by every company-scoped module
-- Company-scoped content migration and filtering
-- Knowledge source upload/retrieval records
-- Reusable skills and company-specific skill configuration
-- Company membership/access assignments
-- End-to-end browser isolation scenario using AZMIN plus two test companies
+See [Agency Operating Model](../architecture/agency-operating-model.md) and [ADR 0004](../decisions/0004-client-service-engagement-ownership.md).

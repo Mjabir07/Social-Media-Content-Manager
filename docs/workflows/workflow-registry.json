@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-11",
+  "lifecycle": ["Assess", "Research", "Plan", "Approve", "Execute", "Verify", "Document", "Report", "Monitor/Renew"],
+  "workflows": [
+    {
+      "id": "crm-sales",
+      "category": "Revenue",
+      "name": "CRM and Sales",
+      "trigger": "New prospect or opportunity",
+      "outcome": "Qualified, won/lost opportunity with complete evidence and next action",
+      "stages": ["Capture", "Enrich", "Qualify", "Discover", "Scope", "Quote", "Follow up", "Win/Lose"],
+      "approval": "Sending proposals, commercial terms and external follow-ups",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "client-onboarding",
+      "category": "Delivery",
+      "name": "Client Onboarding",
+      "trigger": "Lead/deal marked won",
+      "outcome": "Client and purchased service engagements ready for delivery",
+      "stages": ["Create/reuse client", "Contacts", "Agreement", "Billing", "Secure access", "Knowledge", "Kickoff"],
+      "approval": "Agreement, billing, access and kickoff communication",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "digital-marketing-branding",
+      "category": "Digital Marketing & Branding",
+      "name": "Digital Marketing & Branding Delivery",
+      "trigger": "Marketing/branding service engagement activated",
+      "outcome": "Approved campaigns delivered, measured and optimized",
+      "stages": ["Brand intake", "Audit/research", "Strategy", "Campaign", "Content/design", "Approval", "Distribution", "Engagement", "Analytics", "Optimization"],
+      "approval": "External profile changes, publishing, messaging and paid activation",
+      "document": "../modules/digital-marketing-and-branding.md"
+    },
+    {
+      "id": "social-media-management",
+      "category": "Digital Marketing & Branding",
+      "name": "Social Media Management",
+      "trigger": "SMM deliverable included in an active engagement",
+      "outcome": "Optimized channels, approved content, engagement and measurable results",
+      "stages": ["Onboard", "Page setup/audit", "Strategy", "Calendar", "Create", "Approve", "Publish", "Engage", "Analyze", "Improve"],
+      "approval": "Profile changes, content publication and sensitive responses",
+      "document": "smm-delivery-agent.md"
+    },
+    {
+      "id": "website-application",
+      "category": "Development",
+      "name": "Website and Application Delivery",
+      "trigger": "Development engagement approved",
+      "outcome": "Tested, approved, deployed and documented product",
+      "stages": ["Discovery", "Requirements", "UX/content", "Architecture", "Build", "QA/security", "Preview", "Approval", "Deploy", "Handover", "Maintain"],
+      "approval": "Requirements, preview acceptance, production merge/deploy, DNS and migrations",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "ai-workflow-automation",
+      "category": "Automation",
+      "name": "AI and Workflow Automation",
+      "trigger": "Automation opportunity approved",
+      "outcome": "Reliable, observable automation with human fallback and evidence",
+      "stages": ["Process discovery", "Baseline", "Design", "Permission review", "Prototype", "Test", "Approve", "Activate", "Observe", "Improve"],
+      "approval": "Production activation, external messages, data writes and high-risk decisions",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "infrastructure-hosting-domains",
+      "category": "Infrastructure",
+      "name": "Infrastructure, Hosting and Domains",
+      "trigger": "Infrastructure engagement or renewal activated",
+      "outcome": "Secure, monitored, backed-up and renewable infrastructure",
+      "stages": ["Inventory", "Assess", "Design", "Provision", "Configure", "Secure", "Verify", "Monitor", "Backup", "Renew"],
+      "approval": "DNS, credential, production provisioning and destructive actions",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "email-cloud",
+      "category": "Cloud Services",
+      "name": "Email and Cloud Services",
+      "trigger": "Email/cloud engagement activated",
+      "outcome": "Verified, secure service with completed migration and handover",
+      "stages": ["Requirements", "Verify domain/tenant", "Licence plan", "Provision", "DNS", "Security", "Migration", "Test", "Handover", "Renew"],
+      "approval": "Account provisioning, migration, DNS and external communication",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "managed-it-support",
+      "category": "Support",
+      "name": "Managed IT and Support",
+      "trigger": "Request, alert or incident",
+      "outcome": "Verified resolution, customer communication and reusable knowledge",
+      "stages": ["Triage", "Diagnose", "Plan", "Approve if risky", "Resolve", "Verify", "Communicate", "Document", "Follow up"],
+      "approval": "Remote access, disruption, destructive remediation and production changes",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "finance-billing",
+      "category": "Finance",
+      "name": "Finance, Billing and Profitability",
+      "trigger": "Approved commercial scope or financial event",
+      "outcome": "Accurate invoice/payment/cost/profit records and reconciliation",
+      "stages": ["Quote", "Acceptance", "Invoice", "Payment", "Cost allocation", "Profit", "Reconcile", "Report"],
+      "approval": "Issuing invoices, settlements and financial corrections; payments remain manual",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "renewals-recurring",
+      "category": "Operations",
+      "name": "Renewals and Recurring Services",
+      "trigger": "Service activated with renewal/recurrence",
+      "outcome": "Service renewed and verified without interruption",
+      "stages": ["Schedule", "Cost/price review", "Reminder", "Quote/invoice", "Payment", "Provider renewal", "Verify", "Next cycle"],
+      "approval": "Commercial changes, invoice and provider renewal",
+      "document": "agency-service-delivery.md"
+    },
+    {
+      "id": "reporting-improvement",
+      "category": "Cross-cutting",
+      "name": "Reporting and Continuous Improvement",
+      "trigger": "Reporting period closes or material event occurs",
+      "outcome": "Source-backed findings, decisions and next-cycle actions",
+      "stages": ["Collect", "Validate", "Compare", "Explain", "Recommend", "Approve", "Feed next cycle"],
+      "approval": "Client-facing report and material operating changes",
+      "document": "agency-service-delivery.md"
+    }
+  ]
+}

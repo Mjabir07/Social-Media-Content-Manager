@@ -55,5 +55,13 @@ is incomplete until all applicable items below are true:
 Agents should apply this checklist automatically without waiting for an explicit
 documentation request.
 
+## Automated workflow documentation
+
+- `docs/workflows/workflow-registry.json` is the structured workflow inventory.
+- Run `npm run docs:generate` after changing the registry.
+- `npm run docs:check` verifies the generated catalogue and checks mapped workflow code changes for corresponding documentation changes.
+- The production build runs `docs:check`; stale or missing workflow documentation blocks deployment.
+- Architectural ownership changes still require an ADR and cannot be satisfied only by editing the registry.
+
 Files use lowercase kebab-case. ADRs use `NNNN-short-decision-name.md`.
 

@@ -1,56 +1,35 @@
 # Module Catalogue
 
-This catalogue defines the product modules. Detailed specifications are created
-from [the module template](../templates/module-spec-template.md) only when a module
-enters an active implementation phase.
+The CRM is an agency operating system. Modules support the complete client lifecycle; Social Media Management is one submodule of Digital Marketing & Branding.
 
-| Module | Purpose | Initial priority |
+| Module | Purpose | Priority |
 | --- | --- | --- |
-| Headquarters | Consolidated AZMIN command center | Foundation |
-| Companies | Separate brands, clients and partners | Foundation |
-| Company Brain | Isolated knowledge, brand voice and instructions | Foundation |
-| Company Website Enrichment | Source-backed Brand Profile and Brain drafts | Foundation |
-| Integrations & API Vault | Encrypted owner-managed provider credentials | Foundation |
-| Skills and Agents | Reusable skills, agent profiles, runs and approvals | Foundation |
-| Services | Universal catalogue of services sold or managed | High |
-| CRM and Sales | Leads, pipeline, proposals and follow-ups | High |
-| Partnerships | Agreements, lead attribution and commissions | High |
+| Headquarters | Agency-wide command center, workload, risks and approvals | Foundation |
+| Workspaces / Tenants | Isolate each SaaS buyer and their data | Foundation |
+| Clients and Contacts | Customer records shared across sales, delivery, finance and support | Foundation |
+| Operating Contexts | Optional own brands, employers, partners or joint ventures; never a substitute for Client | Foundation |
+| Client Brain | Approved client facts, brand context, requirements and instructions | Foundation |
+| Integrations & API Vault | Encrypted, owner-managed provider credentials | Foundation |
+| Skills and Agents | Reusable agent capabilities, runs, approvals and evidence | Foundation |
+| Services and Engagements | What was sold, scope, package, ownership, dates and commercial terms | High |
+| CRM and Sales | Leads, qualification, proposals, pipeline and follow-ups | High |
 | Projects and Tasks | Delivery, milestones, recurring work and approvals | High |
+| Digital Marketing & Branding | Strategy, brand, creative, SMM, SEO, ads, messaging and analytics | High |
+| Development Studio | Websites, applications, Git, agents, QA, previews and deployments | High |
+| AI & Workflow Automation | Discovery, process design, agents, integrations, testing and monitoring | High |
+| Infrastructure | Domains, DNS, hosting, servers, SSL, backups and monitoring | Medium |
+| Email & Cloud | Google, Microsoft, Zoho and hosted email/cloud operations | Medium |
+| Managed IT & Support | Assets, tickets, incidents, SLAs and maintenance | Medium |
 | Finance | Quotes, invoices, payments, expenses and profitability | High |
 | Renewals | Domains, hosting, email, licences and subscriptions | High |
-| Content Studio | Planning, generation, assets and approvals | Existing MVP |
-| Social Media Management | Multi-company onboarding, strategy, content, publishing and optimization | In progress |
-| Development Studio | Git, coding agents, tests, previews and deployments | High |
-| Infrastructure | Domains, DNS, hosting, servers, SSL and backups | Medium |
-| Email Services | Google, Microsoft, Zoho and hosted email operations | Medium |
-| Communications | Email and WhatsApp automation | Medium |
-| AZMIN Pulse | SaaS subscriptions, monitors, alerts and customer health | Medium |
-| Reports | Business, sales, project, finance and service reporting | Cross-cutting |
+| Communications | Email, WhatsApp and client notification automation | Medium |
+| Reports | Sales, delivery, finance, service and client reporting | Cross-cutting |
 | Platform Admin | Tenants, plans, usage, health and support | Future SaaS |
 
 ## Universal service model
 
-Every sold or managed service is represented by a `ClientService` with company,
-category, package, billing method, internal cost, sale price, profit, dates,
-status, project/provider links, credential references, documents, terms, recurring
-tasks and automation rules.
+Every sale creates or updates a `Service Engagement` owned by a `Client`. It records scope, package, billing, costs, price, profit, dates, status, project/provider links, credentials, documents, approvals, recurring tasks and automation policy.
 
-Service categories include digital marketing, websites, applications, AI
-automation, AZMIN Pulse, email, domains, hosting, servers and support.
+One client may have many engagements across every agency service area. A SaaS buyer receives an isolated Workspace and manages their own clients inside it.
 
-## Development Studio scope
-
-- Requirements and specifications
-- Repository and branch tracking
-- Local/cloud agent workspaces and dispatch
-- Test, quality gate, pull request and review results
-- Vercel preview and production deployments
-- Database, migration, domain, monitoring and handover metadata
-
-## AZMIN Pulse scope
-
-- Customers, plans, trials, subscriptions and licences
-- Monitored resources, usage limits, uptime, alerts and incidents
-- Notification channels, support, versions and feature requests
-- Renewals, revenue, customer health and churn risk
-
+See [Agency Operating Model](../architecture/agency-operating-model.md) and [Agency Service Delivery](../workflows/agency-service-delivery.md).

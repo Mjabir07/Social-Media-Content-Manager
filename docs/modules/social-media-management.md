@@ -1,137 +1,58 @@
 # Module: Social Media Management
 
-**Status:** In progress  
-**Owner:** AZMIN Digital  
-**Roadmap phase:** SMM Phase 1  
-**Last updated:** 2026-08-10
+**Status:** In progress; ownership refactor required
+**Parent module:** Digital Marketing & Branding
+**Last updated:** 2026-08-11
 
-## Problem
+## Purpose
 
-AZMIN needs to operate social media for multiple companies without separating
-commercial client records, brand knowledge, publishing state, or automation
-evidence into disconnected tools. Won SMM leads must move into delivery with
-minimal data entry, while existing clients must also be onboardable directly.
+SMM manages social-channel setup, optimization, strategy, content, creative production, approvals, publishing, engagement and performance improvement. It is not the product boundary and must not own the client relationship.
 
-## Users and permissions
+## Correct ownership
 
-| User/role | Allowed actions |
-| --- | --- |
-| Owner/Admin | Onboard clients, configure brands, integrations, approvals and agent policy |
-| Editor | Onboard clients, prepare campaigns/content and request approval |
-| Viewer | View SMM accounts, readiness, schedules and results |
+- Workspace/Tenant isolates the CRM owner.
+- Client is the customer receiving the service.
+- Service Engagement records the purchased Digital Marketing & Branding/SMM scope.
+- The SMM workspace contains channel, campaign, content and performance state.
+- Client Brain supplies approved brand facts and instructions.
+- Company/Operating Context is optional and is not created for every client.
 
-## Phase 1 scope
+Target relationship:
 
-- Multi-company SMM Command Center at `/azmin/smm`.
-- Idempotent onboarding from a won lead or an existing CRM client.
-- A linked Client (commercial record), Company (isolated brand context), and
-  optional originating Lead.
-- Automatic Company, Brand Profile, Company Brain and starter-pillar creation
-  when missing.
-- Account-level approval and agent operating controls.
-- Campaign and content-pillar data foundations.
-- Portfolio readiness and operational counts.
-- Activity evidence for onboarding.
-- Persistent Delivery Agent runs following Assess → Research → Plan → Approve →
-  Execute → Verify → Document → Continue.
-- An account workspace showing the current plan, sources, blockers, tasks,
-  approvals and evidence.
+`Workspace -> Client -> Service Engagement -> Digital Marketing & Branding -> SMM`
 
-Excluded from Phase 1:
+## End-to-end workflow
 
-- Live platform OAuth and additional provider adapters.
-- Autonomous external publishing.
-- Automated strategy/content generation and performance optimization.
-- Paid-ad campaign management.
+1. Convert a won lead into a Client and SMM Service Engagement, or onboard an existing Client.
+2. Assess current brand, pages, access, competitors and performance.
+3. Research audience, channels, competitors, trends and platform requirements.
+4. Build the brand/page setup, optimization and content strategy plan.
+5. Obtain approval for strategy, channels, cadence, creative direction and publishing policy.
+6. Create or optimize pages, content pillars, campaigns, calendar, copy and creative assets.
+7. Run QA for brand, platform, accessibility, links and compliance.
+8. Approve, schedule and publish through official integrations.
+9. Monitor comments, messages, failures and performance.
+10. Report results and recommend the next optimization cycle.
 
-## Primary workflows
+## Automation policy
 
-### Won SMM lead
+Research, audits, draft plans, briefs, captions, creative variants, calendar suggestions, QA and reporting can be automated. Page ownership changes, external publishing, ad spend and sensitive replies require policy-based approval. Every agent run keeps sources, plan, approvals, evidence and results.
 
-1. User selects an SMM service on a lead.
-2. User marks the lead `WON`.
-3. Existing lead conversion creates the Client and Work records once.
-4. If the service name identifies SMM, AZMIN automatically creates/reuses the
-   Company and creates the SMM account.
-5. For any won lead, the user can select **Onboard SMM** to run the same
-   idempotent operation explicitly.
-6. User completes Brand Brain, connects channels, and activates a campaign.
+## Current implementation and migration debt
 
-### Existing client
+The current Phase 1 implementation creates or reuses a `Company` and links it through `SmmWorkspace`. That behavior reflects the superseded design in ADR 0002 and must be migrated without data loss. Until migration is complete, it is transitional compatibility behavior—not the target domain model.
 
-1. User opens the SMM Command Center.
-2. User selects **Onboard SMM client** and chooses a CRM client.
-3. AZMIN creates or reuses the matching Company and initializes the SMM account.
-4. The client disappears from the available-onboarding list.
+The delivery-agent run, readiness, task, approval and evidence concepts remain valid. Their ownership must move from mandatory Company linkage to Client + Service Engagement.
 
-## Screens
+## Acceptance direction
 
-| Screen | Purpose | Primary action |
-| --- | --- | --- |
-| SMM Command Center | Portfolio overview and readiness | Onboard SMM client |
-| Leads pipeline | Commercial acquisition | Onboard won lead into SMM |
-| Company workspace | Brand Profile and Company Brain | Complete brand setup |
-| Publishing | Existing post scheduling/publishing | Prepare/publish approved post |
-
-## Data model
-
-- `SmmWorkspace`: tenant-owned join between one Client, one Company, and an
-  optional won Lead. Unique links prevent duplicate onboarding.
-- `SmmCampaign`: company-account campaign foundation, workspace-scoped.
-- `SmmContentPillar`: reusable content mix with a per-account unique name.
-- Existing `SocialPost`, `ChannelConnection`, `AutomationRun`, `Conversation`
-  and `MediaAsset` remain the operational sources of truth.
-
-See [ADR 0002](../decisions/0002-link-smm-client-and-company.md).
-
-## Automations and approvals
-
-| Action | Policy |
-| --- | --- |
-| Detect an SMM service on a won lead | Automatic |
-| Create/reuse SMM account and starter pillars | Automatic and idempotent |
-| Prepare Company/Brand Brain shell | Automatic; content requires review |
-| Generate draft strategy/content | Planned automatic internal action |
-| Publish externally | Approval required by default |
-| Delete client/company/account data | Manual only with recovery plan |
-
-## Failure and empty states
-
-- A lead must be `WON` and have its converted Client before lead onboarding.
-- Repeating onboarding returns the existing account and creates no duplicates.
-- If no clients are available, the direct-onboarding action is disabled.
-- Missing brand, channel and campaign setup appears as readiness work—not as a
-  silent failure.
-- Provider failures do not block viewing or internal planning.
-
-## Acceptance criteria
-
-- [x] SMM account data is workspace-scoped.
-- [x] Won SMM leads automatically enter onboarding after commercial conversion.
-- [x] Any won lead can be onboarded explicitly.
-- [x] Existing clients can be onboarded from the SMM Command Center.
-- [x] Repeated onboarding creates no duplicate account/company/pillars.
-- [x] A new account receives four starter content pillars.
-- [x] Command Center shows brand, channel, campaign and publishing readiness.
+- [x] Won leads and existing clients can enter SMM onboarding.
+- [x] Delivery Agent runs retain plans, tasks, approvals and evidence.
 - [x] Publishing remains approval-controlled.
-- [ ] Account setup editor for goals, platforms, cadence and agent schedule.
-- [x] Delivery Agent creates a resumable onboarding plan and execution tasks.
-- [x] Plan approval and step evidence are retained.
-- [ ] Campaign and calendar management UI.
-- [ ] End-to-end database test against an isolated PostgreSQL test database.
+- [ ] Stop automatically creating a Company for a client.
+- [ ] Add Service Engagement ownership to SMM delivery.
+- [ ] Move brand context to Client Brain or engagement-scoped brand profiles.
+- [ ] Support page setup, optimization, creative production and full campaign operations.
+- [ ] Add official channel connections, publishing, monitoring and analytics.
 
-## Test plan
-
-- Unit: SMM-service classification and catalog/format helpers.
-- Integration: onboarding idempotency, tenant isolation and won-lead validation.
-- End-to-end: win lead → onboard → command-center card → brand setup.
-- Security: reject cross-workspace client, company and lead identifiers.
-- Manual UX: empty portfolio, direct onboarding, repeated onboarding, readiness.
-
-## Documentation and operations
-
-- Migration: `20260810120000_smm_phase1_foundation`.
-- Run `prisma migrate deploy` before the application build in production.
-- Required provider credentials are not part of Phase 1.
-- Update this specification, the core workflow and acceptance status with every
-  SMM behavior change.
+See [Digital Marketing & Branding](digital-marketing-and-branding.md), [Agency Service Delivery](../workflows/agency-service-delivery.md), and [ADR 0004](../decisions/0004-client-service-engagement-ownership.md).

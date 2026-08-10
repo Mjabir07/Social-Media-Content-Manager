@@ -4,22 +4,24 @@ This directory is the source of truth for planning and building **AZMIN Digital 
 The product begins as AZMIN Digital's internal operating system and is designed so it
 can later be offered as a multi-tenant SaaS product.
 
-The current application is a Social Media Content Manager MVP. The documents here
-describe its planned evolution into a broader agency operating system.
+The current application contains CRM foundations and an early SMM module. The
+documents define its evolution into a complete agency-wide AI operating CRM.
 
 ## Start here
 
 1. [Product vision and principles](product/vision.md)
 2. [System architecture](architecture/system-architecture.md)
-3. [Module catalogue](modules/module-catalogue.md)
-4. [Implementation roadmap](roadmap/implementation-roadmap.md)
-5. [Core workflows](workflows/core-workflows.md)
-6. [Security and credentials](security/security-and-credentials.md)
-7. [Integration catalogue](integrations/integration-catalogue.md)
-8. [Dashboards and reporting](dashboards/dashboard-specification.md)
-9. [SaaS readiness](saas/saas-readiness.md)
-10. [Documentation standards](standards/documentation-standards.md)
-11. [Glossary](glossary.md)
+3. [Agency operating model](architecture/agency-operating-model.md)
+4. [Module catalogue](modules/module-catalogue.md)
+5. [Implementation roadmap](roadmap/implementation-roadmap.md)
+6. [Agency service delivery](workflows/agency-service-delivery.md)
+7. [Generated workflow catalogue](workflows/generated-workflow-catalogue.md)
+8. [Security and credentials](security/security-and-credentials.md)
+9. [Integration catalogue](integrations/integration-catalogue.md)
+10. [Dashboards and reporting](dashboards/dashboard-specification.md)
+11. [SaaS readiness](saas/saas-readiness.md)
+12. [Documentation standards](standards/documentation-standards.md)
+13. [Glossary](glossary.md)
 
 ## Documentation structure
 
@@ -52,8 +54,8 @@ describe its planned evolution into a broader agency operating system.
 
 | Item | Status |
 | --- | --- |
-| Current MVP | Social-media content management |
-| Target product | AZMIN Digital OS |
-| Current roadmap phase | Phase 1: multi-company foundation |
+| Current implementation | CRM foundations plus early SMM delivery automation |
+| Target product | Agency-wide AI Operating CRM |
+| Current roadmap phase | Correct Workspace, Client and Service Engagement ownership |
 | SaaS availability | Future option; not yet offered |
 

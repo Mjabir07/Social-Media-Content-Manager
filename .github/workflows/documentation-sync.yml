@@ -1,0 +1,21 @@
+name: Documentation Sync
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check generated workflow documentation
+        run: node scripts/generate-workflow-docs.mjs --check
+      - name: Check workflow code/document mapping
+        run: node scripts/check-documentation-sync.mjs
