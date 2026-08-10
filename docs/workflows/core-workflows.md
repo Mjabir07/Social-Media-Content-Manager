@@ -49,6 +49,18 @@
 5. Schedule using an official integration.
 6. Record result, retry failures and collect metrics.
 
+## SMM client onboarding
+
+1. Capture a lead and select the relevant SMM service.
+2. Qualify, quote and mark the lead won.
+3. Complete the idempotent lead-to-client/work conversion.
+4. Automatically onboard recognizable SMM services, or select **Onboard SMM**.
+5. Link the Client, Company and originating Lead in one SMM account.
+6. Create missing Brand Profile, Company Brain and starter content pillars.
+7. Complete brand context, goals, platforms and approval policy.
+8. Connect official social accounts and validate permissions.
+9. Activate the first campaign only after readiness checks pass.
+
 ## Renewal workflow
 
 1. Create renewal when a service begins.

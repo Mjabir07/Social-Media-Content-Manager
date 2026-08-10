@@ -39,5 +39,21 @@ Use: `Proposed`, `Approved`, `In progress`, `Implemented`, `Deprecated`, or
 4. Update status and operating instructions.
 5. Link code, migrations and tests in the pull request.
 
+## Documentation-as-code definition of done
+
+Every new module, screen, workflow, automation, integration, data model or
+permission must update its documentation in the same change. The implementation
+is incomplete until all applicable items below are true:
+
+1. Create or update the module specification before implementation.
+2. Record architectural/data-ownership changes in an ADR.
+3. Update the relevant core workflow and permissions/approval table.
+4. Document migrations, configuration, failure recovery and verification.
+5. Update acceptance criteria from planned to implemented only after tests pass.
+6. Never defer documentation to a separate undocumented future task.
+
+Agents should apply this checklist automatically without waiting for an explicit
+documentation request.
+
 Files use lowercase kebab-case. ADRs use `NNNN-short-decision-name.md`.
 

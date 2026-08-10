@@ -95,6 +95,9 @@ model Workspace {
   devProjects         DevProject[]
   works               Work[]
   quotes              Quote[]
+  smmWorkspaces       SmmWorkspace[]
+  smmCampaigns        SmmCampaign[]
+  smmContentPillars   SmmContentPillar[]
 }
 
 // A sales quotation / estimate. Sent to a prospect (lead) or client; on Accept it
@@ -197,6 +200,7 @@ model Client {
   renewals         Renewal[]
   transactions     Transaction[]
   works            Work[]
+  smmWorkspace     SmmWorkspace?
 
   @@index([workspaceId, status, deletedAt])
 }
@@ -451,6 +455,7 @@ model Company {
   tasks               Task[]
   projects            Project[]
   devProjects         DevProject[]
+  smmWorkspace        SmmWorkspace?
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, status])
@@ -629,9 +634,85 @@ model Lead {
   service     Service?            @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   partnership Partnership?        @relation(fields: [partnershipId], references: [id], onDelete: SetNull)
   payments    CommissionPayment[]
+  smmWorkspace SmmWorkspace?
 
   @@index([workspaceId, stage])
   @@index([workspaceId, companyId])
+}
+
+// Phase 1 Social Media Management (SMM) control record. It joins the commercial
+// Client, isolated Company Brain, and optional originating won Lead. One client
+// and company can have only one SMM workspace, making onboarding idempotent.
+model SmmWorkspace {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  companyId        String   @unique
+  clientId         String   @unique
+  leadId           String?  @unique
+  status           String   @default("ONBOARDING") // ONBOARDING | ACTIVE | PAUSED
+  onboardingStep   Int      @default(1)
+  timezone         String   @default("Asia/Dubai")
+  goals            String   @default("[]") // JSON string[]
+  platforms        String   @default("[]") // JSON string[]
+  postingCadence   String   @default("{}") // JSON Record<platform, posts/week>
+  approvalMode     String   @default("REQUIRED") // REQUIRED | TRUSTED_AUTO
+  agentEnabled     Boolean  @default(true)
+  agentMode        String   @default("DRAFT_ONLY") // DRAFT_ONLY | ASSISTED | AUTONOMOUS
+  nextAgentRunAt   DateTime?
+  lastAgentRunAt   DateTime?
+  createdById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client    Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead      Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  campaigns SmmCampaign[]
+  pillars   SmmContentPillar[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, nextAgentRunAt])
+}
+
+model SmmCampaign {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  smmWorkspaceId String
+  name           String
+  objective      String?
+  status         String    @default("DRAFT") // DRAFT | ACTIVE | PAUSED | COMPLETED
+  startDate      DateTime?
+  endDate        DateTime?
+  budgetCents    Int?
+  currency       String    @default("AED")
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  smmWorkspace SmmWorkspace @relation(fields: [smmWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([smmWorkspaceId, startDate])
+}
+
+model SmmContentPillar {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  smmWorkspaceId String
+  name           String
+  description    String?
+  targetPercent  Int      @default(25)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  smmWorkspace SmmWorkspace @relation(fields: [smmWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([smmWorkspaceId, name])
+  @@index([workspaceId, active])
 }
 
 // Phase 8-style multi-platform publishing. Write a post once; it fans out to

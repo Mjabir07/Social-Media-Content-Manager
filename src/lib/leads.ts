@@ -8,6 +8,7 @@ import { createNotifications } from "@/lib/notifications";
 import { sendViaChannel, type ConnectionRow } from "@/lib/channel-adapters";
 import { recordOutbound } from "@/lib/inbox";
 import type { CurrentUser } from "@/lib/session";
+import { autoOnboardWonSmmLead } from "@/lib/smm";
 
 type Actor = Pick<CurrentUser, "id" | "name" | "avatarColor" | "workspaceId">;
 
@@ -118,6 +119,7 @@ export async function updateLead(
   if (data.stage === "WON" && before.stage !== "WON" && !before.wonAt) {
     try {
       await convertWonLead(workspaceId, id, actor);
+      await autoOnboardWonSmmLead(workspaceId, id, actor?.id ?? null);
     } catch {
       /* conversion is best-effort; the stage change itself still succeeds */
     }

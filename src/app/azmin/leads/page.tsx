@@ -26,6 +26,7 @@ export default async function LeadsPage() {
         id: l.id, name: l.name, email: l.email, phone: l.phone, source: l.source,
         serviceId: l.serviceId, companyId: l.companyId, valueCents: l.valueCents, currency: l.currency,
         notes: l.notes, stage: l.stage as LeadStage, score: l.score, aiSummary: l.aiSummary,
+        clientId: l.clientId, wonAt: l.wonAt ? l.wonAt.toISOString() : null,
       }))}
       companies={companies.map((c) => ({ id: c.id, name: c.name }))}
       services={services.map((s) => ({ id: s.id, name: s.name }))}

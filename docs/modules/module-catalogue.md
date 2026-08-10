@@ -19,7 +19,7 @@ enters an active implementation phase.
 | Finance | Quotes, invoices, payments, expenses and profitability | High |
 | Renewals | Domains, hosting, email, licences and subscriptions | High |
 | Content Studio | Planning, generation, assets and approvals | Existing MVP |
-| Social Publishing | Scheduling, publishing and platform logs | Medium |
+| Social Media Management | Multi-company onboarding, strategy, content, publishing and optimization | In progress |
 | Development Studio | Git, coding agents, tests, previews and deployments | High |
 | Infrastructure | Domains, DNS, hosting, servers, SSL and backups | Medium |
 | Email Services | Google, Microsoft, Zoho and hosted email operations | Medium |

@@ -12,6 +12,7 @@ type Lead = {
   id: string; name: string; email: string | null; phone: string | null; source: string | null;
   serviceId: string | null; companyId: string | null; valueCents: number | null; currency: string;
   notes: string | null; stage: LeadStage; score: number | null; aiSummary: string | null;
+  clientId: string | null; wonAt: string | null;
 };
 type Ref = { id: string; name: string };
 
@@ -44,6 +45,15 @@ export function LeadsView({ leads, companies, services, partners, canManage, use
       valueCents: Number.isFinite(valueCents as number) ? valueCents : null, notes: draft.notes || null,
     }, "add");
     if (ok) setDraft(null);
+  }
+
+  async function onboardSmm(leadId: string) {
+    setBusy(`smm${leadId}`); setError("");
+    const res = await fetch(`/api/leads/${leadId}/smm-onboard`, { method: "POST" });
+    setBusy("");
+    if (!res.ok) { const data = await res.json().catch(() => ({})); setError(data.error || "Could not onboard this SMM client."); return; }
+    router.push("/azmin/smm");
+    router.refresh();
   }
 
   const totalOpen = leads.filter((l) => stageMeta[l.stage].open).length;
@@ -101,6 +111,7 @@ export function LeadsView({ leads, companies, services, partners, canManage, use
                           <select value={l.stage} onChange={(e) => call(`/api/leads/${l.id}`, "PATCH", { stage: e.target.value })} className="rounded-lg border border-[#CEDBE9] bg-white px-1.5 py-1 text-[11px] font-bold text-[#234B70]">
                             {LEAD_STAGES.map((s) => <option key={s} value={s}>{stageMeta[s].label}</option>)}
                           </select>
+                          {l.stage === "WON" && l.clientId && <button onClick={() => onboardSmm(l.id)} disabled={busy === `smm${l.id}`} className="rounded-lg bg-[#DDF5FF] px-2 py-1 text-[11px] font-bold text-[#0758C9] disabled:opacity-50">{busy === `smm${l.id}` ? "Opening…" : "Onboard SMM"}</button>}
                           <button onClick={() => call(`/api/leads/${l.id}`, "DELETE")} aria-label="Remove" className="ml-auto grid h-7 w-7 place-items-center rounded-lg text-[#A12C2C] hover:bg-[#FFF0F0]"><Trash2 size={13} aria-hidden /></button>
                         </div>
                       )}
