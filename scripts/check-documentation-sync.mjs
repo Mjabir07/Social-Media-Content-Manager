@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 const mappings = [
   { code: ["src/app/azmin/services/", "src/app/api/services/", "src/components/azmin/services", "src/lib/services"], docs: ["docs/modules/services-and-engagements.md", "docs/workflows/generated-workflow-catalogue.md"] },
   { code: ["src/app/azmin/smm/", "src/app/api/smm/", "src/components/azmin/smm", "src/lib/smm"], docs: ["docs/modules/digital-marketing-and-branding.md", "docs/modules/social-media-management.md", "docs/workflows/smm-delivery-agent.md"] },
-  { code: ["src/app/api/leads/", "src/components/azmin/leads", "src/lib/leads"], docs: ["docs/workflows/agency-service-delivery.md", "docs/workflows/core-workflows.md"] },
+  { code: ["src/app/api/leads/", "src/components/azmin/leads", "src/lib/leads"], docs: ["docs/workflows/agency-service-delivery.md", "docs/workflows/core-workflows.md", "docs/modules/services-and-engagements.md"] },
   { code: ["src/app/azmin/development/", "src/components/azmin/development", "src/lib/dev-studio"], docs: ["docs/workflows/agency-service-delivery.md", "docs/roadmap/phase-05-development-studio.md"] },
   { code: ["src/lib/agents", "src/components/azmin/company-agents"], docs: ["docs/architecture/agency-operating-model.md", "docs/workflows/agency-service-delivery.md"] }
 ];
