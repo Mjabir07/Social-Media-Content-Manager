@@ -26,6 +26,8 @@ Email hosting, webmail, VPS, cloud servers and web hosting are infrastructure se
 
 Owners/Admins select **Install agency catalogue** in `/azmin/services`. Installation is idempotent: existing names are retained and only missing services are created. Pricing is initially **Custom quote** so commercial rates can be approved before use.
 
+The catalogue UI groups services into collapsed category dropdowns with service counts. Users can open one category at a time or use **Expand all / Collapse all** for full-catalogue review.
+
 ## Lead and automation routing
 
 1. Create a lead and select a categorized service.

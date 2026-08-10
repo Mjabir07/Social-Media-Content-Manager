@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpenCheck, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
+import { BookOpenCheck, ChevronDown, ChevronsUpDown, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { PRICING_MODELS, formatServicePrice, pricingModelLabels, type PricingModel } from "@/lib/services-catalog";
 
@@ -42,9 +42,14 @@ export function ServicesView({ services, companies, canManage, userName, userEma
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
 
   const categories = Array.from(new Set(services.map((s) => s.category))).sort();
   const companyName = (id: string | null) => (id ? companies.find((c) => c.id === id)?.name ?? "Company" : "Shared");
+
+  function toggleCategory(category: string) {
+    setOpenCategories((current) => current.includes(category) ? current.filter((item) => item !== category) : [...current, category]);
+  }
 
   function openNew() { setError(""); setDraft({ ...emptyDraft }); }
   function openEdit(s: Service) {
@@ -131,12 +136,22 @@ export function ServicesView({ services, companies, canManage, userName, userEma
             {canManage && <button onClick={installCatalogue} disabled={busy} className="mt-5 rounded-xl bg-[#087CFA] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">Install agency catalogue</button>}
           </div>
         ) : (
-          <div className="mt-7 space-y-8">
-            {categories.map((cat) => (
-              <div key={cat}>
-                <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#526F8A]"><Tag size={13} aria-hidden /> {cat}</div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {services.filter((s) => s.category === cat).map((s) => (
+          <div className="mt-7 space-y-3">
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setOpenCategories(openCategories.length === categories.length ? [] : categories)} className="inline-flex items-center gap-2 rounded-xl border border-[#B8CCE0] bg-white px-3 py-2 text-xs font-bold text-[#234B70] hover:border-[#087CFA] hover:text-[#0758C9]"><ChevronsUpDown size={14} aria-hidden /> {openCategories.length === categories.length ? "Collapse all" : "Expand all"}</button>
+            </div>
+            {categories.map((cat) => {
+              const categoryServices = services.filter((service) => service.category === cat);
+              const isOpen = openCategories.includes(cat);
+              return <section key={cat} className="overflow-hidden rounded-2xl border border-[#C8D8EA] bg-[#F7FAFE] shadow-[0_8px_24px_rgba(3,20,46,.04)]">
+                <button type="button" onClick={() => toggleCategory(cat)} aria-expanded={isOpen} className="flex w-full items-center gap-3 px-4 py-4 text-left transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#087CFA]">
+                  <Tag size={15} className="shrink-0 text-[#0758C9]" aria-hidden />
+                  <span className="text-xs font-extrabold uppercase tracking-[.14em] text-[#234B70]">{cat}</span>
+                  <span className="ml-auto rounded-full bg-[#DDF5FF] px-2.5 py-1 text-[10px] font-extrabold text-[#0758C9]">{categoryServices.length} services</span>
+                  <ChevronDown size={18} className={`shrink-0 text-[#526F8A] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden />
+                </button>
+                {isOpen && <div className="grid gap-3 border-t border-[#D6E2EF] p-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {categoryServices.map((s) => (
                     <div key={s.id} className="flex flex-col gap-3 rounded-2xl border border-[#C8D8EA] bg-white p-4 shadow-[0_10px_28px_rgba(3,20,46,.05)]">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-display text-base font-bold">{s.name}</h3>
@@ -157,9 +172,9 @@ export function ServicesView({ services, companies, canManage, userName, userEma
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-            ))}
+                </div>}
+              </section>;
+            })}
           </div>
         )}
       </div>
