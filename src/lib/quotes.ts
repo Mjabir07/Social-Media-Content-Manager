@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/clients";
 import { createWork } from "@/lib/works";
-import { sendViaChannel, type ConnectionRow } from "@/lib/channel-adapters";
+import { sendViaChannel, type ConnectionRow, type MailAttachment } from "@/lib/channel-adapters";
 import { recordOutbound } from "@/lib/inbox";
+import { generateQuotePdf } from "@/lib/quote-pdf";
 import {
   isQuoteStatus,
   quoteSubtotalCents,
@@ -168,9 +169,25 @@ export async function sendQuote(workspaceId: string, id: string, createdById: st
   const total = formatQuoteMoney(q.subtotalCents, q.currency);
   const lineText = q.lines.map((l) => `• ${l.description} — ${l.quantity} × ${formatQuoteMoney(l.unitPriceCents, q.currency)} = ${formatQuoteMoney(l.quantity * l.unitPriceCents, q.currency)}`).join("\n");
   const validity = q.validUntil ? `\nValid until: ${new Date(q.validUntil).toLocaleDateString("en-GB")}` : "";
-  const message = `Hi ${q.contactName},\n\nHere is your quotation ${quoteNumberLabel(q.number)} — ${q.title}:\n\n${lineText}\n\nTotal: ${total}${validity}\n\nReply to approve and we'll get started.\n\nAZMIN Digital`;
+  const message = `Hi ${q.contactName},\n\nHere is your quotation ${quoteNumberLabel(q.number)} — ${q.title}:\n\n${lineText}\n\nTotal: ${total}${validity}\n\nThe full quotation is attached as a PDF. Reply to approve and we'll get started.\n\nAZMIN Digital`;
 
-  await sendOnChannel(workspaceId, "EMAIL", q.contactEmail, q.contactName, `Quotation ${quoteNumberLabel(q.number)}\n\n${message}`);
+  // Professional PDF attached to the email.
+  let pdf: MailAttachment[] | undefined;
+  try {
+    const bytes = await generateQuotePdf({
+      numberLabel: quoteNumberLabel(q.number), title: q.title,
+      contactName: q.contactName, contactEmail: q.contactEmail, contactPhone: q.contactPhone,
+      currency: q.currency, validUntil: q.validUntil ? new Date(q.validUntil).toISOString() : null,
+      notes: q.notes, subtotalCents: q.subtotalCents,
+      lines: q.lines.map((l) => ({ description: l.description, quantity: l.quantity, unitPriceCents: l.unitPriceCents })),
+      fromName: "AZMIN Digital", fromEmail: "info@azmindigital.com",
+    });
+    pdf = [{ filename: `Quotation-${quoteNumberLabel(q.number)}.pdf`, content: bytes }];
+  } catch {
+    /* PDF is best-effort; still send the text */
+  }
+
+  await sendOnChannel(workspaceId, "EMAIL", q.contactEmail, q.contactName, `Quotation ${quoteNumberLabel(q.number)}\n\n${message}`, pdf);
   await sendOnChannel(workspaceId, "WHATSAPP", q.contactPhone, q.contactName, message);
 
   if (q.status === "DRAFT" || q.status === "DECLINED") {
@@ -226,12 +243,12 @@ export async function declineQuote(workspaceId: string, id: string): Promise<num
   return result.count;
 }
 
-async function sendOnChannel(workspaceId: string, channel: "EMAIL" | "WHATSAPP", recipient: string | null, contactName: string, text: string) {
+async function sendOnChannel(workspaceId: string, channel: "EMAIL" | "WHATSAPP", recipient: string | null, contactName: string, text: string, attachments?: MailAttachment[]) {
   if (!recipient) return;
   const conn = (await prisma.channelConnection.findFirst({ where: { workspaceId, channel, status: "CONNECTED" } })) as unknown as NonNullable<ConnectionRow> | null;
   const result = await sendViaChannel({
     action: channel === "EMAIL" ? "SEND_EMAIL" : "SEND_WHATSAPP",
-    channel, connection: conn, message: text, recipient,
+    channel, connection: conn, message: text, recipient, attachments,
   });
   await recordOutbound(workspaceId, { channel, contact: recipient, contactName, text, status: result.status });
 }

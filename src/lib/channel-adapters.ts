@@ -67,14 +67,17 @@ function metaFrom(conn: NonNullable<ConnectionRow>): string | null {
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
+export type MailAttachment = { filename: string; content: Uint8Array };
+
 export async function sendViaChannel(input: {
   action: Action;
   channel: Channel | null;
   connection: ConnectionRow;
   message: string;
   recipient?: string; // phone (WhatsApp) or email (Email) for messaging channels
+  attachments?: MailAttachment[]; // EMAIL only (e.g. quote PDF)
 }): Promise<SendResult> {
-  const { action, channel, connection, message, recipient } = input;
+  const { action, channel, connection, message, recipient, attachments } = input;
 
   // In-app notification needs no external channel.
   if (action === "NOTIFY") {
@@ -98,7 +101,7 @@ export async function sendViaChannel(input: {
       case "WHATSAPP":
         return await sendWhatsApp(secret, message, recipient);
       case "EMAIL":
-        return await sendEmail(secret, metaFrom(connection), message, recipient);
+        return await sendEmail(secret, metaFrom(connection), message, recipient, attachments);
       default:
         // INSTAGRAM (needs media + 2-step) and any other channel: not wired yet.
         return { status: "SIMULATED", detail: `Would send via ${connection.displayName}: ${truncate(message)}` };
@@ -178,7 +181,7 @@ function parseSmtp(secret: string): SmtpConfig | null {
   return null;
 }
 
-async function sendEmail(secret: string, from: string | null, message: string, recipient?: string): Promise<SendResult> {
+async function sendEmail(secret: string, from: string | null, message: string, recipient?: string, attachments?: MailAttachment[]): Promise<SendResult> {
   if (!recipient) return { status: "SKIPPED", detail: "No recipient email for this send." };
   const subject = message.split("\n")[0].slice(0, 80) || "Message";
   const body = message.split("\n").slice(1).join("\n").trim() || message;
@@ -188,7 +191,10 @@ async function sendEmail(secret: string, from: string | null, message: string, r
     try {
       const nodemailer = (await import("nodemailer")).default;
       const transport = nodemailer.createTransport({ host: smtp.host, port: smtp.port, secure: smtp.port === 465, auth: { user: smtp.user, pass: smtp.pass } });
-      const info = await transport.sendMail({ from: from || smtp.from || smtp.user, to: recipient, subject, text: body });
+      const info = await transport.sendMail({
+        from: from || smtp.from || smtp.user, to: recipient, subject, text: body,
+        attachments: attachments?.map((a) => ({ filename: a.filename, content: Buffer.from(a.content) })),
+      });
       return { status: "SUCCESS", detail: "Email sent (SMTP).", externalId: info.messageId };
     } catch (error) {
       return { status: "FAILED", detail: error instanceof Error ? error.message : "SMTP send failed." };
@@ -198,7 +204,10 @@ async function sendEmail(secret: string, from: string | null, message: string, r
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-    body: JSON.stringify({ from: from || "onboarding@resend.dev", to: recipient, subject, text: message }),
+    body: JSON.stringify({
+      from: from || "onboarding@resend.dev", to: recipient, subject, text: message,
+      attachments: attachments?.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString("base64") })),
+    }),
     signal: AbortSignal.timeout(20_000),
   });
   const data = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
