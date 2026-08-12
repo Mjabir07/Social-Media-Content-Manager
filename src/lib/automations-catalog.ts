@@ -14,7 +14,7 @@ export const channelMeta: Record<Channel, { label: string; blurb: string; secret
   LINKEDIN: { label: "LinkedIn", blurb: "Post to a LinkedIn page or profile.", secretLabel: "Access token", placeholder: "AQV..." },
   YOUTUBE: { label: "YouTube", blurb: "Publish videos / Shorts to a YouTube channel.", secretLabel: "OAuth access token", placeholder: "ya29..." },
   WHATSAPP: { label: "WhatsApp", blurb: "Send WhatsApp messages via the official Cloud API. Enter the Phone Number ID and a permanent token.", secretLabel: "Phone number ID : token", placeholder: "123456789:EAAG..." },
-  EMAIL: { label: "Email", blurb: "Send email through Resend (free tier). Paste your Resend API key.", secretLabel: "Resend API key", placeholder: "re_..." },
+  EMAIL: { label: "Email", blurb: "Free: Gmail/SMTP — paste {\"host\":\"smtp.gmail.com\",\"port\":465,\"user\":\"you@gmail.com\",\"pass\":\"app-password\"}. Or a Resend API key (re_...).", secretLabel: "SMTP JSON or Resend key", placeholder: "{\"host\":\"smtp.gmail.com\",\"port\":465,\"user\":\"you@gmail.com\",\"pass\":\"app password\"}" },
   TELEGRAM: { label: "Telegram", blurb: "Send Telegram messages from a bot.", secretLabel: "Bot token : chat id", placeholder: "123:ABC... : -100..." },
   WEBHOOK: { label: "Webhook / Zapier", blurb: "Call any URL — connect Zapier, Make, or your own endpoint.", secretLabel: "Webhook URL", placeholder: "https://hooks.zapier.com/…" },
 };
