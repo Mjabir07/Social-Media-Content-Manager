@@ -153,12 +153,52 @@ async function sendWhatsApp(secret: string, message: string, recipient?: string)
 }
 
 // Email via Resend. secret = Resend API key ("re_..."). Needs recipient.
+type SmtpConfig = { host: string; port: number; user: string; pass: string; from?: string };
+
+// The EMAIL secret is either a Resend API key (default) or an SMTP config —
+// JSON {host,port,user,pass,from?} or an smtp://user:pass@host:port URL. SMTP
+// (e.g. Gmail app password) is the free path; Resend is the API path.
+function parseSmtp(secret: string): SmtpConfig | null {
+  const s = secret.trim();
+  if (s.startsWith("{")) {
+    try {
+      const j = JSON.parse(s) as Partial<SmtpConfig>;
+      if (j.host && j.user && j.pass) return { host: j.host, port: Number(j.port) || 587, user: j.user, pass: j.pass, from: j.from };
+    } catch { return null; }
+    return null;
+  }
+  if (/^smtps?:\/\//i.test(s)) {
+    try {
+      const u = new URL(s);
+      if (u.hostname && u.username && u.password) {
+        return { host: u.hostname, port: Number(u.port) || (s.startsWith("smtps") ? 465 : 587), user: decodeURIComponent(u.username), pass: decodeURIComponent(u.password) };
+      }
+    } catch { return null; }
+  }
+  return null;
+}
+
 async function sendEmail(secret: string, from: string | null, message: string, recipient?: string): Promise<SendResult> {
   if (!recipient) return { status: "SKIPPED", detail: "No recipient email for this send." };
+  const subject = message.split("\n")[0].slice(0, 80) || "Message";
+  const body = message.split("\n").slice(1).join("\n").trim() || message;
+
+  const smtp = parseSmtp(secret);
+  if (smtp) {
+    try {
+      const nodemailer = (await import("nodemailer")).default;
+      const transport = nodemailer.createTransport({ host: smtp.host, port: smtp.port, secure: smtp.port === 465, auth: { user: smtp.user, pass: smtp.pass } });
+      const info = await transport.sendMail({ from: from || smtp.from || smtp.user, to: recipient, subject, text: body });
+      return { status: "SUCCESS", detail: "Email sent (SMTP).", externalId: info.messageId };
+    } catch (error) {
+      return { status: "FAILED", detail: error instanceof Error ? error.message : "SMTP send failed." };
+    }
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-    body: JSON.stringify({ from: from || "onboarding@resend.dev", to: recipient, subject: message.split("\n")[0].slice(0, 80) || "Message", text: message }),
+    body: JSON.stringify({ from: from || "onboarding@resend.dev", to: recipient, subject, text: message }),
     signal: AbortSignal.timeout(20_000),
   });
   const data = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
