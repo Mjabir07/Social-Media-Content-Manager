@@ -59,15 +59,28 @@ export async function recordOutbound(workspaceId: string, event: {
   return conversation.id;
 }
 
+// Which company owns an inbound message = the company on the connected channel it
+// arrived through, so the thread lands in that company's Inbox (isolation).
+async function companyForInbound(workspaceId: string, channel: string): Promise<string | null> {
+  const connChannel = channel === "MESSENGER" || channel === "INSTAGRAM" ? "META_PAGE" : channel;
+  const conn = await prisma.channelConnection.findFirst({
+    where: { workspaceId, channel: connChannel, status: "CONNECTED" },
+    select: { companyId: true },
+  });
+  return conn?.companyId ?? null;
+}
+
 // Upsert the conversation and append the inbound message. Returns the conversation id.
 export async function recordInbound(workspaceId: string, event: InboundMessage) {
   const preview = event.text.slice(0, 140);
+  const companyId = await companyForInbound(workspaceId, event.channel);
   const conversation = await prisma.conversation.upsert({
     where: { workspaceId_channel_externalId: { workspaceId, channel: event.channel, externalId: event.externalId } },
     create: {
       workspaceId,
       channel: event.channel,
       externalId: event.externalId,
+      companyId,
       contactName: event.contactName ?? null,
       contactHandle: event.contactHandle ?? event.externalId,
       status: "OPEN",
@@ -81,6 +94,7 @@ export async function recordInbound(workspaceId: string, event: InboundMessage) 
       lastMessageAt: new Date(),
       lastMessagePreview: preview,
       ...(event.contactName ? { contactName: event.contactName } : {}),
+      ...(companyId ? { companyId } : {}),
     },
     select: { id: true },
   });
