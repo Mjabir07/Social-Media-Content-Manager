@@ -206,8 +206,8 @@ export async function convertWonLead(workspaceId: string, leadId: string, actor:
   const amount = value > 0 ? `\nAmount: ${fmt(value, currency)}` : "";
   const message = `Hi ${lead.name},\n\nThank you for confirming. Please find your invoice for the agreed work.${amount}\n\nOnce payment is done we'll start right away.\n\nAZMIN Digital`;
 
-  await sendInvoiceOnChannel(workspaceId, "EMAIL", lead.email, lead.name, `Invoice — ${lead.name}\n\n${message}`);
-  await sendInvoiceOnChannel(workspaceId, "WHATSAPP", lead.phone, lead.name, message);
+  await sendInvoiceOnChannel(workspaceId, "EMAIL", lead.email, lead.name, `Invoice — ${lead.name}\n\n${message}`, lead.companyId);
+  await sendInvoiceOnChannel(workspaceId, "WHATSAPP", lead.phone, lead.name, message, lead.companyId);
 
   if (actor) {
     await createNotifications(actor, await ownerIds(workspaceId), {
@@ -227,7 +227,7 @@ async function ownerIds(workspaceId: string): Promise<string[]> {
 
 // Send on one channel if it's connected and we have a recipient; log the result
 // (sent/failed/simulated) into the Inbox for verification.
-async function sendInvoiceOnChannel(workspaceId: string, channel: "EMAIL" | "WHATSAPP", recipient: string | null, contactName: string, text: string) {
+async function sendInvoiceOnChannel(workspaceId: string, channel: "EMAIL" | "WHATSAPP", recipient: string | null, contactName: string, text: string, companyId: string | null) {
   if (!recipient) return;
   const conn = (await prisma.channelConnection.findFirst({
     where: { workspaceId, channel, status: "CONNECTED" },
@@ -245,6 +245,7 @@ async function sendInvoiceOnChannel(workspaceId: string, channel: "EMAIL" | "WHA
     channel: channel === "EMAIL" ? "EMAIL" : "WHATSAPP",
     contact: recipient,
     contactName,
+    companyId,
     text,
     status: result.status,
   });

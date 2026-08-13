@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/session";
 import { getConversation, getConversations, markRead } from "@/lib/inbox";
+import { getCompanies } from "@/lib/companies";
+import { ACTIVE_COMPANY_COOKIE, resolveActiveCompany } from "@/lib/company-context";
 import { InboxView } from "@/components/azmin/inbox-view";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +13,12 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   if (!user) redirect("/login?callbackUrl=/azmin/inbox");
   const { c } = await searchParams;
 
-  const conversations = await getConversations(user.workspaceId, "ALL");
+  const companies = await getCompanies(user.workspaceId);
+  const store = await cookies();
+  const active = resolveActiveCompany(companies, store.get(ACTIVE_COMPANY_COOKIE)?.value);
+  const scope = active ? { companyId: active.id, isHeadquarters: active.isHeadquarters } : undefined;
+
+  const conversations = await getConversations(user.workspaceId, "ALL", scope);
   let selected = null;
   if (c) {
     selected = await getConversation(user.workspaceId, c);

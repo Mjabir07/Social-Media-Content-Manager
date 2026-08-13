@@ -32,6 +32,7 @@ export async function recordOutbound(workspaceId: string, event: {
   channel: string;
   contact: string; // phone (WhatsApp) or email — the conversation key
   contactName?: string | null;
+  companyId?: string | null; // which company this thread belongs to (isolation)
   text: string;
   status: string; // SENT | FAILED | SIMULATED | SKIPPED
   messageExternalId?: string | null;
@@ -42,11 +43,13 @@ export async function recordOutbound(workspaceId: string, event: {
     create: {
       workspaceId, channel: event.channel, externalId: event.contact,
       contactName: event.contactName ?? null, contactHandle: event.contact,
+      companyId: event.companyId ?? null,
       status: "OPEN", unread: 0, lastMessageAt: new Date(), lastMessagePreview: preview,
     },
     update: {
       lastMessageAt: new Date(), lastMessagePreview: preview,
       ...(event.contactName ? { contactName: event.contactName } : {}),
+      ...(event.companyId ? { companyId: event.companyId } : {}),
     },
     select: { id: true },
   });
@@ -156,12 +159,17 @@ async function notifyEscalation(workspaceId: string, convo: { id: string; contac
   );
 }
 
-export async function getConversations(workspaceId: string, status = "OPEN") {
-  return prisma.conversation.findMany({
-    where: { workspaceId, ...(status === "ALL" ? {} : { status }) },
-    orderBy: { lastMessageAt: "desc" },
-    take: 100,
-  });
+// Scope by active company: a specific company sees only its own conversations;
+// headquarters (owner view) also absorbs untagged/legacy ones (companyId null).
+export type InboxScope = { companyId: string; isHeadquarters: boolean };
+
+export async function getConversations(workspaceId: string, status = "OPEN", scope?: InboxScope) {
+  const where: Record<string, unknown> = { workspaceId };
+  if (status !== "ALL") where.status = status;
+  if (scope) {
+    where.OR = scope.isHeadquarters ? [{ companyId: scope.companyId }, { companyId: null }] : [{ companyId: scope.companyId }];
+  }
+  return prisma.conversation.findMany({ where, orderBy: { lastMessageAt: "desc" }, take: 100 });
 }
 
 export async function getConversation(workspaceId: string, id: string) {
