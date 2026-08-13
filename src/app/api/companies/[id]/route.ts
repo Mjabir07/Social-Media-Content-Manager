@@ -8,23 +8,28 @@ import { serializeJson } from "@/lib/json";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Collect maximum profile data for AI quality: keep type checks + trim, but no
+// tight length caps that block real content. A single generous ceiling per field
+// only guards against runaway/abusive payloads, never normal input.
+const LONG = 50000; // per free-text field
+const ITEM = 2000; // per list line
 const schema = z.object({
-  name: z.string().trim().min(2).max(100).optional(),
+  name: z.string().trim().min(2).max(200).optional(),
   relationshipType: z.enum(COMPANY_RELATIONSHIPS).optional(),
-  industry: z.string().trim().max(100).nullish(),
-  website: z.string().trim().url().max(240).nullish().or(z.literal("")),
-  description: z.string().trim().max(4000).nullish(),
+  industry: z.string().trim().max(LONG).nullish(),
+  website: z.string().trim().max(LONG).nullish(), // accept any text; partial URLs ok
+  description: z.string().trim().max(LONG).nullish(),
   status: z.enum(["ACTIVE", "PAUSED", "ARCHIVED"]).optional(),
-  tagline: z.string().trim().max(180).nullish(),
-  brandVoice: z.string().trim().max(1200).nullish(),
-  targetAudiences: z.array(z.string().trim().min(1).max(160)).max(20).optional(),
-  offerings: z.array(z.string().trim().min(1).max(160)).max(30).optional(),
-  differentiators: z.array(z.string().trim().min(1).max(200)).max(20).optional(),
-  contentRules: z.string().trim().max(2000).nullish(),
-  companyFacts: z.string().trim().max(4000).nullish(),
-  salesGuidance: z.string().trim().max(3000).nullish(),
-  contentGuidance: z.string().trim().max(3000).nullish(),
-  aiInstructions: z.string().trim().max(4000).nullish(),
+  tagline: z.string().trim().max(LONG).nullish(),
+  brandVoice: z.string().trim().max(LONG).nullish(),
+  targetAudiences: z.array(z.string().trim().min(1).max(ITEM)).max(500).optional(),
+  offerings: z.array(z.string().trim().min(1).max(ITEM)).max(500).optional(),
+  differentiators: z.array(z.string().trim().min(1).max(ITEM)).max(500).optional(),
+  contentRules: z.string().trim().max(LONG).nullish(),
+  companyFacts: z.string().trim().max(LONG).nullish(),
+  salesGuidance: z.string().trim().max(LONG).nullish(),
+  contentGuidance: z.string().trim().max(LONG).nullish(),
+  aiInstructions: z.string().trim().max(LONG).nullish(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
