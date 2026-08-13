@@ -184,6 +184,7 @@ model Transaction {
 model Client {
   id          String    @id @default(cuid())
   workspaceId String
+  companyId   String? // owning company (per-company isolation); null = legacy/HQ
   name        String
   type        String    @default("DIRECT") // DIRECT | RESELLER — a reseller holds many works for different end-customers
   domain      String? // primary domain — you often recall a client by this
@@ -205,6 +206,7 @@ model Client {
   smmWorkspace     SmmWorkspace?
 
   @@index([workspaceId, status, deletedAt])
+  @@index([workspaceId, companyId])
 }
 
 // A piece of work / service delivered under a Client. For a reseller client each

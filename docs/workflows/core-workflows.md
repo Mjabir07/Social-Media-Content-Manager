@@ -32,3 +32,11 @@ Each module specializes the universal loop while keeping the Client and Service 
 Internal research, drafting, classification and safe preparation may run automatically within policy. External publishing, advertising spend, production deployment, financial commitments, credential changes and destructive actions require the configured approval and an audit record.
 
 The detailed workflows live in [Agency Service Delivery](agency-service-delivery.md). The generated, machine-checked inventory is [Workflow Catalogue](generated-workflow-catalogue.md).
+
+## Per-company data isolation
+
+Every operational record is scoped to a company. When a company is active in the
+switcher, its data (inbox threads, clients, and the modules rolling out after)
+shows only that company's rows; headquarters additionally sees untagged/legacy
+rows. New records — including clients created when a lead is won — are tagged with
+the active/owning company so pipelines stay separated per company.

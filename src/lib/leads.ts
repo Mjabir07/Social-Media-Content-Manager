@@ -185,6 +185,7 @@ export async function convertWonLead(workspaceId: string, leadId: string, actor:
   const value = lead.valueCents ?? 0;
 
   const client = await createClient(workspaceId, createdById, {
+    companyId: lead.companyId,
     name: lead.name,
     email: lead.email,
     phone: lead.phone,

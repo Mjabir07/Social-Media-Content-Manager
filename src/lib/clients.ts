@@ -46,10 +46,10 @@ async function rollUp(workspaceId: string, clientId: string, now: Date) {
   };
 }
 
-export async function getClients(workspaceId: string): Promise<ClientDTO[]> {
+export async function getClients(workspaceId: string, scope?: Record<string, unknown>): Promise<ClientDTO[]> {
   const now = new Date();
   const rows = await prisma.client.findMany({
-    where: { workspaceId, deletedAt: null },
+    where: { workspaceId, deletedAt: null, ...(scope ?? {}) },
     orderBy: [{ status: "asc" }, { name: "asc" }],
   });
   return Promise.all(
@@ -72,6 +72,7 @@ export async function getClient(workspaceId: string, id: string): Promise<Client
 export type ClientInput = {
   name: string;
   type?: string;
+  companyId?: string | null;
   domain?: string | null;
   contactName?: string | null;
   email?: string | null;
@@ -85,6 +86,7 @@ export async function createClient(workspaceId: string, createdById: string | nu
     data: {
       workspaceId,
       createdById: createdById ?? undefined,
+      companyId: input.companyId ?? null,
       name: input.name.trim(),
       type: isClientType(input.type) ? input.type : "DIRECT",
       domain: input.domain?.trim() || null,

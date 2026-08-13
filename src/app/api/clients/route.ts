@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { guard } from "@/lib/api-guard";
 import { createClient, getClients } from "@/lib/clients";
+import { getActiveCompany, companyScopeWhere } from "@/lib/active-company";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,8 @@ const createSchema = z.object({
 export async function GET() {
   const g = await guard();
   if (!g.ok) return g.response;
-  const clients = await getClients(g.user.workspaceId);
+  const active = await getActiveCompany(g.user.workspaceId);
+  const clients = await getClients(g.user.workspaceId, companyScopeWhere(active));
   return Response.json({ clients });
 }
 
@@ -27,6 +29,7 @@ export async function POST(req: Request) {
   if (!g.ok) return g.response;
   const parsed = createSchema.safeParse(await req.json());
   if (!parsed.success) return Response.json({ error: "Add a client name (and check the fields)." }, { status: 400 });
-  const client = await createClient(g.user.workspaceId, g.user.id, { ...parsed.data, email: parsed.data.email || null });
+  const active = await getActiveCompany(g.user.workspaceId);
+  const client = await createClient(g.user.workspaceId, g.user.id, { ...parsed.data, email: parsed.data.email || null, companyId: active?.id ?? null });
   return Response.json(client, { status: 201 });
 }
