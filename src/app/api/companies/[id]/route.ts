@@ -2,7 +2,7 @@ import { z } from "zod";
 import { guard } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
-import { COMPANY_RELATIONSHIPS } from "@/lib/companies";
+import { COMPANY_RELATIONSHIPS, archiveCompany } from "@/lib/companies";
 import { serializeJson } from "@/lib/json";
 
 export const runtime = "nodejs";
@@ -70,4 +70,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
   await logActivity(g.user, { action: brainTouched ? "company.brain_updated" : "company.updated", targetType: "company", targetId: id, targetLabel: updated.name });
   return Response.json(updated);
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const g = await guard("ADMIN");
+  if (!g.ok) return g.response;
+  const { id } = await params;
+  const res = await archiveCompany(g.user.workspaceId, id);
+  if (!res.ok) return Response.json({ error: res.error }, { status: res.error === "Not found" ? 404 : 400 });
+  await logActivity(g.user, { action: "company.updated", targetType: "company", targetId: id });
+  return Response.json({ ok: true });
 }

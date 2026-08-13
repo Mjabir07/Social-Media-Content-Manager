@@ -33,6 +33,16 @@ export async function getCompanies(workspaceId: string) {
   });
 }
 
+// "Remove" a company = archive it (status ARCHIVED) so it drops out of every
+// list/switcher/dropdown while its data is kept. Headquarters can't be removed.
+export async function archiveCompany(workspaceId: string, id: string): Promise<{ ok: boolean; error?: string }> {
+  const c = await prisma.company.findFirst({ where: { id, workspaceId }, select: { isHeadquarters: true } });
+  if (!c) return { ok: false, error: "Not found" };
+  if (c.isHeadquarters) return { ok: false, error: "The headquarters company can't be removed." };
+  await prisma.company.updateMany({ where: { id, workspaceId }, data: { status: "ARCHIVED" } });
+  return { ok: true };
+}
+
 export async function getCompany(workspaceId: string, id: string) {
   const company = await prisma.company.findFirst({
     where: { id, workspaceId, status: { not: "ARCHIVED" } },

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, X } from "lucide-react";
+import { ArrowRight, Check, X, Trash2, Loader2 } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 
 type CompanyRow = {
@@ -140,8 +140,27 @@ function Summary({ value, label, helper, tone }: { value: number; label: string;
 
 function CompanyCard({ company }: { company: CompanyRow }) {
   const brainReady = company.brain?.knowledgeStatus === "CONFIGURED";
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function remove(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Remove "${company.name}"? It's hidden from the workspace; its data is kept.`)) return;
+    setBusy(true);
+    const res = await fetch(`/api/companies/${company.id}`, { method: "DELETE" });
+    setBusy(false);
+    if (res.ok) router.refresh();
+    else alert((await res.json().catch(() => ({}))).error ?? "Could not remove.");
+  }
+
   return (
-    <Link href={`/azmin/companies/${company.id}`} className="group flex flex-col gap-4 rounded-2xl border border-[#BFD1E3] bg-[#F9FBFE] p-4 transition hover:border-[#087CFA] hover:bg-white hover:shadow-[0_12px_30px_rgba(8,124,250,.12)] sm:flex-row sm:items-center sm:p-5">
+    <Link href={`/azmin/companies/${company.id}`} className="group relative flex flex-col gap-4 rounded-2xl border border-[#BFD1E3] bg-[#F9FBFE] p-4 transition hover:border-[#087CFA] hover:bg-white hover:shadow-[0_12px_30px_rgba(8,124,250,.12)] sm:flex-row sm:items-center sm:p-5">
+      {!company.isHeadquarters && (
+        <button onClick={remove} disabled={busy} title="Remove company" className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-lg border border-[#F0C9C4] bg-white text-[#C0362C] opacity-0 transition hover:bg-[#FDECEC] disabled:opacity-60 group-hover:opacity-100">
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+        </button>
+      )}
       <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-base font-black text-white shadow-md" style={{ background: `linear-gradient(135deg, ${company.primaryColor}, #0758C9)` }}>{initials(company.name)}</span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
