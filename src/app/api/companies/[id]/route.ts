@@ -13,7 +13,7 @@ const schema = z.object({
   relationshipType: z.enum(COMPANY_RELATIONSHIPS).optional(),
   industry: z.string().trim().max(100).nullish(),
   website: z.string().trim().url().max(240).nullish().or(z.literal("")),
-  description: z.string().trim().max(600).nullish(),
+  description: z.string().trim().max(4000).nullish(),
   status: z.enum(["ACTIVE", "PAUSED", "ARCHIVED"]).optional(),
   tagline: z.string().trim().max(180).nullish(),
   brandVoice: z.string().trim().max(1200).nullish(),

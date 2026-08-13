@@ -46,7 +46,7 @@ export function CompanyWorkspace({ company, canManage, isActive }: { company: Co
       ...form, targetAudiences: lines(form.targetAudiences), offerings: lines(form.offerings), differentiators: lines(form.differentiators),
     }) });
     setSaving(false);
-    if (response.ok) { setMessage("Company updated successfully."); router.refresh(); } else { const data = await response.json().catch(() => ({})); setMessage(data.error || "Could not save"); }
+    if (response.ok) { setMessage("Company updated successfully."); router.refresh(); } else { const data = await response.json().catch(() => ({})); const bad = data.fields ? Object.keys(data.fields).join(", ") : ""; setMessage((data.error || "Could not save") + (bad ? ` (check: ${bad})` : "")); }
   }
 
   async function activateCompany() {
