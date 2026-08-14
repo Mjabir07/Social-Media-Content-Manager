@@ -19,6 +19,10 @@ export async function getSmmDeliveryWorkspace(workspaceId: string, smmWorkspaceI
     },
   });
   if (!account) return null;
+  const postCounts = await prisma.socialPost.groupBy({
+    by: ["status"], where: { workspaceId, companyId: account.companyId }, _count: { _all: true },
+  });
+  const countBy = (status: string) => postCounts.find((row) => row.status === status)?._count._all ?? 0;
   return {
     id: account.id,
     status: account.status,
@@ -27,6 +31,10 @@ export async function getSmmDeliveryWorkspace(workspaceId: string, smmWorkspaceI
     platforms: parseJson<string[]>(account.platforms, []),
     approvalMode: account.approvalMode,
     agentMode: account.agentMode,
+    agentEnabled: account.agentEnabled,
+    nextAgentRunAt: account.nextAgentRunAt?.toISOString() ?? null,
+    lastAgentRunAt: account.lastAgentRunAt?.toISOString() ?? null,
+    postStats: { draft: countBy("DRAFT"), scheduled: countBy("SCHEDULED"), published: countBy("PUBLISHED") },
     company: {
       id: account.company.id, name: account.company.name, website: account.company.website, industry: account.company.industry,
       primaryColor: account.company.primaryColor,

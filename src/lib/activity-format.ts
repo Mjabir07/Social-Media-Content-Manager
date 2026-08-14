@@ -59,6 +59,7 @@ export const ACTIONS = {
   "smm.plan_opened": { category: "business", verb: "opened SMM onboarding plan" },
   "smm.plan_approved": { category: "business", verb: "approved SMM onboarding plan" },
   "smm.step_updated": { category: "business", verb: "updated SMM workflow step" },
+  "smm.automation_updated": { category: "business", verb: "updated SMM automation settings" },
   "partnership.created": { category: "business", verb: "added partnership" },
   "partnership.updated": { category: "business", verb: "updated partnership" },
   "commission.paid": { category: "business", verb: "recorded commission payment for" },

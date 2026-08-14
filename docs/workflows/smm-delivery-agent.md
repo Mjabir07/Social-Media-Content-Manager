@@ -109,3 +109,25 @@ Preset deliverables/counts were rebalanced to match the entry price tiers:
 Essential 8/2/4 (IG, FB), Growth 12/4/8 (IG, FB, Google), Professional
 16/6/10 (IG, FB, Google), Elite 20/8/12 (IG, FB, LinkedIn, Google). Counts stay
 editable per client in the confirmed scope.
+
+## Content automation (agent executor + daily cron)
+
+Each SMM account has an automation panel (right column of the delivery agent
+workspace) to configure the agent:
+
+- **Automation enabled** — arms the account for the daily cycle.
+- **Agent mode** — `DRAFT_ONLY` / `ASSISTED` create DRAFT posts for review;
+  `AUTONOMOUS` creates SCHEDULED posts spread every two days.
+- **Approval** — `REQUIRED` (approve before publish) or `TRUSTED_AUTO`. Enabling
+  `AUTONOMOUS` or `TRUSTED_AUTO` requires an owner or admin.
+- **Run now** — triggers one generation cycle immediately for testing.
+
+The executor (`src/lib/smm-executor.ts`) runs from the existing daily cron
+(`/api/cron/run`). For every enabled, due account (`nextAgentRunAt <= now`) it
+tops up a rolling buffer (up to 6 upcoming posts, max 3 per run) by drafting
+captions from the account's active content pillars via `generateCaption`, using
+the company brand voice. It never publishes directly: DRAFT posts wait for the
+owner; AUTONOMOUS SCHEDULED posts are published later by `runDuePosts` — and
+only when a channel is actually connected, otherwise they remain a safe record.
+Settings are updated via `PATCH /api/smm/[id]`; the account read now also
+returns `agentEnabled`, `nextAgentRunAt`, `lastAgentRunAt` and post counts.
