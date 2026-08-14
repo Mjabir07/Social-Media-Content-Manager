@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({
   status: z.enum(SMM_STEP_STATUSES),
-  evidence: z.string().trim().max(3000).nullish(),
+  evidence: z.string().trim().max(50000).nullish(),
   blockingReason: z.string().trim().max(1000).nullish(),
 });
 

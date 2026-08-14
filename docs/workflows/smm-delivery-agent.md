@@ -75,3 +75,16 @@ execution mode, status, output, evidence, task link and blocking reason.
 - [x] The account workspace exposes research, plan, approval, blockers and evidence.
 - [ ] External provider research enrichment is connected to the run evidence.
 - [ ] Platform-specific setup executors are added one provider at a time.
+
+## Service package presets (step "Confirm service package and deliverables")
+
+The service-package step no longer expects a hand-typed scope. Selecting a
+preset package from a dropdown (Essential / Growth / Professional / Elite,
+defined in `src/lib/smm-packages-catalog.ts`) auto-fills a professional,
+structured scope of work — monthly output, deliverables, responsibilities,
+turnaround, reporting, primary CTA and exclusions — rendered by
+`renderPackageScope`. The composed scope stays fully editable before the owner
+confirms it, then becomes the step's verification evidence and the confirmed
+package record the strategy step reads from. Prices are indicative and editable
+per client. Evidence length caps were widened so a full scope is never
+truncated.
