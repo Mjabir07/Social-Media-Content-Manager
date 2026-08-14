@@ -96,3 +96,9 @@ evidence modal with the existing note prefilled, so an owner can revise a step
 already marked done — including re-selecting a preset service package on the
 scope step. Skipped steps stay locked; approval-gated runs still hide step
 editing until the plan is approved.
+
+## Package price tiers
+
+Indicative monthly package prices: Essential AED 700, Growth AED 1,000,
+Professional AED 1,200, Elite AED 1,500+. Prices are starting points and stay
+editable per client in the confirmed scope.
