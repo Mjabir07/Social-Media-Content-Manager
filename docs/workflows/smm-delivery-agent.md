@@ -102,3 +102,10 @@ editing until the plan is approved.
 Indicative monthly package prices: Essential AED 700, Growth AED 1,000,
 Professional AED 1,200, Elite AED 1,500+. Prices are starting points and stay
 editable per client in the confirmed scope.
+
+## Package deliverables rebalanced to price tiers
+
+Preset deliverables/counts were rebalanced to match the entry price tiers:
+Essential 8/2/4 (IG, FB), Growth 12/4/8 (IG, FB, Google), Professional
+16/6/10 (IG, FB, Google), Elite 20/8/12 (IG, FB, LinkedIn, Google). Counts stay
+editable per client in the confirmed scope.
