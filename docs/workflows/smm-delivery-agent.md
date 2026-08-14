@@ -88,3 +88,11 @@ confirms it, then becomes the step's verification evidence and the confirmed
 package record the strategy step reads from. Prices are indicative and editable
 per client. Evidence length caps were widened so a full scope is never
 truncated.
+
+## Editing completed steps
+
+Completed (DONE) workflow steps now expose an **Edit** button that reopens the
+evidence modal with the existing note prefilled, so an owner can revise a step
+already marked done — including re-selecting a preset service package on the
+scope step. Skipped steps stay locked; approval-gated runs still hide step
+editing until the plan is approved.
