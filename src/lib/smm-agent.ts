@@ -45,7 +45,7 @@ export async function getSmmDeliveryWorkspace(workspaceId: string, smmWorkspaceI
     lead: account.lead ? { id: account.lead.id, name: account.lead.name, service: account.lead.service?.name ?? null } : null,
     connections: account.company.connections,
     campaigns: account.campaigns.map((campaign) => ({ id: campaign.id, name: campaign.name, status: campaign.status })),
-    pillars: account.pillars.map((pillar) => ({ id: pillar.id, name: pillar.name, targetPercent: pillar.targetPercent, active: pillar.active })),
+    pillars: account.pillars.map((pillar) => ({ id: pillar.id, name: pillar.name, description: pillar.description, targetPercent: pillar.targetPercent, active: pillar.active })),
     runs: account.workflowRuns.map((run) => ({
       id: run.id, type: run.type, status: run.status, objective: run.objective,
       context: parseJson<Record<string, unknown>>(run.contextJson, {}), research: parseJson<Record<string, unknown>>(run.researchJson, {}),

@@ -18,7 +18,7 @@ type Account = {
   lead: { id: string; name: string; service: string | null } | null;
   connections: Array<{ id: string; channel: string; displayName: string; status: string }>;
   campaigns: Array<{ id: string; name: string; status: string }>;
-  pillars: Array<{ id: string; name: string; targetPercent: number; active: boolean }>;
+  pillars: Array<{ id: string; name: string; description: string | null; targetPercent: number; active: boolean }>;
   runs: Run[];
 };
 
@@ -44,6 +44,26 @@ export function SmmAccountWorkspace({ account, canManage, canApprove, userName, 
     if (!response.ok) { setError(data.error || "Could not update automation."); return; }
     setAutoMsg(runNow ? `Agent ran — ${data.created} draft${data.created === 1 ? "" : "s"} created.` : "Automation settings saved.");
     router.refresh();
+  }
+  const [newPillar, setNewPillar] = useState("");
+  const [newPillarDesc, setNewPillarDesc] = useState("");
+  async function addPillar() {
+    if (!newPillar.trim()) return;
+    setBusy("pillar-add"); setError("");
+    const response = await fetch(`/api/smm/${account.id}/pillars`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newPillar, description: newPillarDesc || null }) });
+    const data = await response.json().catch(() => ({})); setBusy("");
+    if (!response.ok) { setError(data.error || "Could not add the pillar."); return; }
+    setNewPillar(""); setNewPillarDesc(""); router.refresh();
+  }
+  async function togglePillar(pillarId: string, active: boolean) {
+    setBusy(`pillar-${pillarId}`);
+    await fetch(`/api/smm/${account.id}/pillars/${pillarId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ active }) });
+    setBusy(""); router.refresh();
+  }
+  async function removePillar(pillarId: string) {
+    setBusy(`pillar-${pillarId}`);
+    await fetch(`/api/smm/${account.id}/pillars/${pillarId}`, { method: "DELETE" });
+    setBusy(""); router.refresh();
   }
   const isPackageStep = editingStep?.key === "confirm-scope";
   const selectedPackage = getSmmPackage(packageId);
@@ -112,6 +132,19 @@ export function SmmAccountWorkspace({ account, canManage, canApprove, userName, 
             <div className="flex gap-2"><button onClick={() => saveAutomation(false)} disabled={busy === "auto" || busy === "run"} className="flex-1 rounded-xl bg-[#087CFA] px-3 py-2 text-xs font-extrabold text-white disabled:opacity-50">{busy === "auto" ? "Saving…" : "Save"}</button><button onClick={() => saveAutomation(true)} disabled={busy === "auto" || busy === "run"} className="flex-1 rounded-xl bg-[#031A3B] px-3 py-2 text-xs font-extrabold text-white disabled:opacity-50">{busy === "run" ? "Running…" : "Run now"}</button></div>
             {autoMsg && <p className="text-[11px] font-bold text-emerald-600">{autoMsg}</p>}
           </div> : <p className="mt-3 text-xs text-[#58748D]">Ask an editor or admin to configure automation.</p>}
+        </Panel><Panel title="Content pillars" subtitle="Themes the agent drafts content from. Only active pillars are used.">
+          <div className="mt-3 space-y-2">
+            {account.pillars.length ? account.pillars.map((pillar) => <div key={pillar.id} className={`rounded-xl border px-3 py-2.5 ${pillar.active ? "border-[#CBE7F4] bg-[#F4FBFE]" : "border-[#E1E8F0] bg-[#F6F8FB] opacity-70"}`}>
+              <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate text-sm font-bold text-[#03142E]">{pillar.name}</span><span className="text-[10px] font-black text-[#6B839B]">{pillar.targetPercent}%</span></div>
+              {pillar.description && <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-[#58748D]">{pillar.description}</p>}
+              {canManage && <div className="mt-1.5 flex gap-3 text-[10px] font-black uppercase tracking-wider"><button onClick={() => togglePillar(pillar.id, !pillar.active)} disabled={busy === `pillar-${pillar.id}`} className="text-[#0758C9] disabled:opacity-40">{pillar.active ? "Pause" : "Activate"}</button><button onClick={() => removePillar(pillar.id)} disabled={busy === `pillar-${pillar.id}`} className="text-red-600 disabled:opacity-40">Delete</button></div>}
+            </div>) : <p className="text-xs text-[#58748D]">No pillars yet. Add one so the agent has themes to draft from.</p>}
+          </div>
+          {canManage && <div className="mt-3 space-y-2 border-t border-[#E4ECF5] pt-3">
+            <input value={newPillar} onChange={(e) => setNewPillar(e.target.value)} placeholder="Pillar name (e.g. Pest prevention tips)" className="w-full rounded-xl border border-[#C4D5E6] bg-white px-3 py-2 text-sm outline-none focus:border-[#087CFA]" />
+            <input value={newPillarDesc} onChange={(e) => setNewPillarDesc(e.target.value)} placeholder="Short description (optional)" className="w-full rounded-xl border border-[#C4D5E6] bg-white px-3 py-2 text-sm outline-none focus:border-[#087CFA]" />
+            <button onClick={addPillar} disabled={!newPillar.trim() || busy === "pillar-add"} className="w-full rounded-xl bg-[#087CFA] px-3 py-2 text-xs font-extrabold text-white disabled:opacity-50">{busy === "pillar-add" ? "Adding…" : "Add pillar"}</button>
+          </div>}
         </Panel><Panel title="Assessment gaps" subtitle="Inputs the agent identified before execution.">{gaps.length ? <ul className="mt-4 space-y-2">{gaps.map((gap) => <li key={gap} className="flex gap-2 text-xs leading-5 text-[#6B4B16]"><CircleAlert className="mt-0.5 shrink-0 text-amber-600" size={14} />{gap}</li>)}</ul> : <p className="mt-4 text-sm font-semibold text-emerald-700">No initial context gaps detected.</p>}</Panel><Panel title="Research evidence" subtitle="Approved public sources retained by the agent.">{sources.length ? <div className="mt-4 space-y-3">{sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="block rounded-xl border border-[#D6E2EE] p-3 hover:border-[#087CFA]"><span className="flex items-center gap-1.5 text-xs font-bold text-[#0758C9]"><Globe2 size={13} />{source.title}</span>{source.excerpt && <span className="mt-1.5 line-clamp-3 block text-[11px] leading-5 text-[#58748D]">{source.excerpt}</span>}</a>)}</div> : <p className="mt-4 text-xs leading-5 text-[#58748D]">No public source captured. Add or verify the company website, then complete the guided research step.</p>}</Panel><Panel title="Security & evidence" subtitle="Controls applied to every run."><ul className="mt-4 space-y-2 text-xs text-[#496A86]"><li className="flex gap-2"><LockKeyhole size={14} className="shrink-0 text-[#0758C9]" />No credentials in plans, tasks, or evidence.</li><li className="flex gap-2"><FileCheck2 size={14} className="shrink-0 text-[#0758C9]" />Completion requires verification evidence.</li><li className="flex gap-2"><ShieldCheck size={14} className="shrink-0 text-[#0758C9]" />External actions remain approval-controlled.</li></ul></Panel></aside></div>}
     </div>
 

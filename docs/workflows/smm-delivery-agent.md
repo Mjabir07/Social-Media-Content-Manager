@@ -131,3 +131,12 @@ owner; AUTONOMOUS SCHEDULED posts are published later by `runDuePosts` — and
 only when a channel is actually connected, otherwise they remain a safe record.
 Settings are updated via `PATCH /api/smm/[id]`; the account read now also
 returns `agentEnabled`, `nextAgentRunAt`, `lastAgentRunAt` and post counts.
+
+## Content pillars editing
+
+The account workspace now has a Content pillars panel (right column) to manage
+the themes the agent drafts from. Editors can add a pillar (name + optional
+description), pause/activate it, or delete it. Only active pillars feed the
+executor's content generation. Backed by `src/lib/smm-pillars.ts` and
+`POST /api/smm/[id]/pillars` + `PATCH|DELETE /api/smm/[id]/pillars/[pillarId]`,
+all account- and workspace-scoped.
