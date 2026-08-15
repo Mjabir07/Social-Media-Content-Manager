@@ -140,3 +140,15 @@ description), pause/activate it, or delete it. Only active pillars feed the
 executor's content generation. Backed by `src/lib/smm-pillars.ts` and
 `POST /api/smm/[id]/pillars` + `PATCH|DELETE /api/smm/[id]/pillars/[pillarId]`,
 all account- and workspace-scoped.
+
+## Single-window client workspace
+
+The SMM account page is now a self-contained workspace with an in-window left
+sidebar so everything for one client lives in one place. Tabs: Overview
+(progress, channels, gaps, research), Setup steps (the 10-step plan + approval),
+Content (the client's drafted/scheduled/published posts + link to Publishing),
+Pillars (add/pause/delete themes), and Automation (agent mode + approval + run
+now). A persistent "Your next step" highlight banner computes the single most
+important action (approve plan, add website, connect a channel, add pillars,
+enable automation, or review drafts) and deep-links to the right tab. The page
+loads the company's posts alongside the account for the Content tab.
