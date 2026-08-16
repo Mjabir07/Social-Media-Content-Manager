@@ -152,3 +152,13 @@ now). A persistent "Your next step" highlight banner computes the single most
 important action (approve plan, add website, connect a channel, add pillars,
 enable automation, or review drafts) and deep-links to the right tab. The page
 loads the company's posts alongside the account for the Content tab.
+
+## In-window content editing and inbox
+
+The Content tab now manages posts inline — edit the caption, set or clear a
+schedule (draft ⇄ scheduled), publish now, or delete — all via the existing
+`/api/posts/[id]` and `/api/posts/[id]/publish` endpoints, so the owner never
+leaves the client window. A new Inbox tab lists the client's conversations
+(company-scoped) with unread badges and an inline reply box wired to
+`/api/inbox/[id]/reply`. Publishing to a channel that is not connected is safely
+simulated until live keys exist.

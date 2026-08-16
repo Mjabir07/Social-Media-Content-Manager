@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Bot, CheckCircle2, CircleAlert, ExternalLink, FileCheck2, FileText, Globe2, LayoutDashboard, Layers, ListChecks, Loader2, LockKeyhole, Play, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Bot, CheckCircle2, CircleAlert, ExternalLink, FileCheck2, FileText, Globe2, LayoutDashboard, Layers, ListChecks, Loader2, LockKeyhole, MessageSquare, Play, Send, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { AzminProfileMenu } from "@/components/azmin/profile-menu";
 import { SMM_PACKAGES, getSmmPackage, renderPackageScope } from "@/lib/smm-packages-catalog";
 
 type PostRow = { id: string; content: string; status: string; scheduledAt: string | null; targetCount: number };
-type Tab = "overview" | "setup" | "content" | "pillars" | "automation";
+type ConvoRow = { id: string; channel: string; contactName: string | null; contactHandle: string | null; status: string; unread: number; lastMessagePreview: string | null; lastMessageAt: string | null };
+type Tab = "overview" | "setup" | "content" | "pillars" | "automation" | "inbox";
 
 type Step = { id: string; key: string; title: string; description: string | null; category: string; executionMode: string; status: string; requiresApproval: boolean; blockingReason: string | null; output: Record<string, unknown>; evidence: Record<string, unknown>; task: { id: string; status: string; dueDate: string | null } | null };
 type Run = { id: string; status: string; objective: string; research: Record<string, unknown>; plan: Record<string, unknown>; summary: string | null; nextAction: string | null; lastError: string | null; approvedAt: string | null; createdAt: string; progress: { finished: number; total: number; percent: number }; steps: Step[] };
@@ -27,7 +28,7 @@ type Account = {
 
 const PLATFORM_OPTIONS = ["FACEBOOK", "INSTAGRAM", "LINKEDIN", "YOUTUBE", "TIKTOK", "X", "PINTEREST", "GOOGLE_BUSINESS"];
 
-export function SmmAccountWorkspace({ account, posts, canManage, canApprove, userName, userEmail, userRole }: { account: Account; posts: PostRow[]; canManage: boolean; canApprove: boolean; userName: string; userEmail: string; userRole: string }) {
+export function SmmAccountWorkspace({ account, posts, conversations, canManage, canApprove, userName, userEmail, userRole }: { account: Account; posts: PostRow[]; conversations: ConvoRow[]; canManage: boolean; canApprove: boolean; userName: string; userEmail: string; userRole: string }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("overview");
   const [goals, setGoals] = useState(account.goals.join("\n"));
@@ -68,6 +69,46 @@ export function SmmAccountWorkspace({ account, posts, canManage, canApprove, use
     setBusy(`pillar-${pillarId}`);
     await fetch(`/api/smm/${account.id}/pillars/${pillarId}`, { method: "DELETE" });
     setBusy(""); router.refresh();
+  }
+  // Content tab: inline post editing
+  const [editingPost, setEditingPost] = useState<string | null>(null);
+  const [postText, setPostText] = useState("");
+  const [postWhen, setPostWhen] = useState("");
+  function openPost(post: PostRow) {
+    setEditingPost(post.id); setPostText(post.content);
+    setPostWhen(post.scheduledAt ? toLocalInput(post.scheduledAt) : "");
+  }
+  async function savePost(id: string) {
+    setBusy(`post-${id}`); setError("");
+    const body: Record<string, unknown> = { content: postText };
+    if (postWhen) body.scheduledAt = new Date(postWhen).toISOString(); else body.scheduledAt = null;
+    const response = await fetch(`/api/posts/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setBusy("");
+    if (!response.ok) { const d = await response.json().catch(() => ({})); setError(d.error || "Could not save the post."); return; }
+    setEditingPost(null); router.refresh();
+  }
+  async function publishNow(id: string) {
+    setBusy(`post-${id}`); setError("");
+    const response = await fetch(`/api/posts/${id}/publish`, { method: "POST" });
+    setBusy("");
+    if (!response.ok) { const d = await response.json().catch(() => ({})); setError(d.error || "Could not publish the post."); return; }
+    router.refresh();
+  }
+  async function deletePostRow(id: string) {
+    setBusy(`post-${id}`);
+    await fetch(`/api/posts/${id}`, { method: "DELETE" });
+    setBusy(""); setEditingPost(null); router.refresh();
+  }
+  // Inbox tab: reply inline
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  async function sendReply(convoId: string) {
+    if (!replyText.trim()) return;
+    setBusy(`reply-${convoId}`); setError("");
+    const response = await fetch(`/api/inbox/${convoId}/reply`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: replyText }) });
+    setBusy("");
+    if (!response.ok) { const d = await response.json().catch(() => ({})); setError(d.error || "Could not send the reply."); return; }
+    setReplyText(""); setReplyTo(null); router.refresh();
   }
   const isPackageStep = editingStep?.key === "confirm-scope";
   const selectedPackage = getSmmPackage(packageId);
@@ -126,6 +167,7 @@ export function SmmAccountWorkspace({ account, posts, canManage, canApprove, use
           <NavItem icon={<ListChecks size={15} />} label="Setup steps" active={tab === "setup"} onClick={() => setTab("setup")} badge={run.status === "AWAITING_APPROVAL" ? "!" : undefined} />
           <NavItem icon={<FileText size={15} />} label="Content" active={tab === "content"} onClick={() => setTab("content")} badge={account.postStats.draft || undefined} />
           <NavItem icon={<Layers size={15} />} label="Pillars" active={tab === "pillars"} onClick={() => setTab("pillars")} />
+          <NavItem icon={<MessageSquare size={15} />} label="Inbox" active={tab === "inbox"} onClick={() => setTab("inbox")} badge={conversations.reduce((sum, c) => sum + c.unread, 0) || undefined} />
           <NavItem icon={<Bot size={15} />} label="Automation" active={tab === "automation"} onClick={() => setTab("automation")} />
         </aside>
 
@@ -149,10 +191,25 @@ export function SmmAccountWorkspace({ account, posts, canManage, canApprove, use
             <div className="space-y-3">{run.steps.map((step, index) => <article key={step.id} className="rounded-2xl border border-[#C8D8EA] bg-white p-4 shadow-[0_8px_26px_rgba(3,20,46,.04)]"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#EAF4FF] text-xs font-black text-[#0758C9]">{String(index + 1).padStart(2, "0")}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-display text-base font-bold">{step.title}</h3><StatusBadge value={step.status} /><ModeBadge value={step.executionMode} /></div><p className="mt-1.5 text-xs leading-5 text-[#58748D]">{step.description}</p>{step.blockingReason && <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-red-700"><CircleAlert size={12} /> {step.blockingReason}</p>}{typeof step.evidence.note === "string" && <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800"><strong>Evidence:</strong> {step.evidence.note}</p>}<div className="mt-3 flex flex-wrap items-center gap-2">{step.task && <Link href="/azmin/tasks" className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0758C9]">Task {step.task.status.toLowerCase()} <ExternalLink size={11} /></Link>}{canManage && run.status !== "AWAITING_APPROVAL" && step.status !== "SKIPPED" && <button onClick={() => { setEditingStep(step); setEvidence(typeof step.evidence.note === "string" ? step.evidence.note : ""); setPackageId(""); }} className="ml-auto rounded-lg bg-[#031A3B] px-3 py-1.5 text-[11px] font-bold text-white">{step.status === "DONE" ? "Edit" : "Update & add evidence"}</button>}</div></div></div></article>)}</div>
           </>}
 
-          {tab === "content" && <Panel title="Content" subtitle="Everything the agent has drafted or scheduled for this client.">
+          {tab === "content" && <Panel title="Content" subtitle="Review, edit, schedule and publish the client's posts here.">
             <div className="mt-3 grid grid-cols-3 gap-2 text-center"><Stat label="Drafts" value={account.postStats.draft} /><Stat label="Scheduled" value={account.postStats.scheduled} /><Stat label="Published" value={account.postStats.published} /></div>
-            <div className="mt-4 space-y-2">{posts.length ? posts.slice(0, 40).map((post) => <div key={post.id} className="rounded-xl border border-[#D6E2EE] p-3"><div className="flex flex-wrap items-center gap-2"><StatusBadge value={post.status} /><span className="text-[11px] font-semibold text-[#6B839B]">{post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : "No date"} · {post.targetCount} channel{post.targetCount === 1 ? "" : "s"}</span></div><p className="mt-1.5 line-clamp-3 whitespace-pre-wrap text-sm text-[#33526E]">{post.content}</p></div>) : <p className="text-xs text-[#58748D]">No content yet. Turn on automation and run the agent, or add posts in Publishing.</p>}</div>
-            <Link href="/azmin/publishing" className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#087CFA] px-4 py-2.5 text-xs font-extrabold text-white">Open Publishing to edit &amp; publish <ExternalLink size={13} /></Link>
+            <div className="mt-4 space-y-2">{posts.length ? posts.slice(0, 60).map((post) => <div key={post.id} className="rounded-xl border border-[#D6E2EE] p-3">
+              <div className="flex flex-wrap items-center gap-2"><StatusBadge value={post.status} /><span className="text-[11px] font-semibold text-[#6B839B]">{post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : "No date"} · {post.targetCount} channel{post.targetCount === 1 ? "" : "s"}</span>{canManage && post.status !== "PUBLISHED" && <button onClick={() => editingPost === post.id ? setEditingPost(null) : openPost(post)} className="ml-auto text-[11px] font-black uppercase tracking-wider text-[#0758C9]">{editingPost === post.id ? "Close" : "Edit"}</button>}</div>
+              {editingPost === post.id ? <div className="mt-2 space-y-2">
+                <textarea value={postText} onChange={(e) => setPostText(e.target.value)} className="min-h-28 w-full rounded-xl border border-[#C4D5E6] bg-white p-2.5 text-sm outline-none focus:border-[#087CFA]" />
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#0758C9]">Schedule (leave blank for draft)<input type="datetime-local" value={postWhen} onChange={(e) => setPostWhen(e.target.value)} className="mt-1 w-full rounded-xl border border-[#C4D5E6] bg-white px-3 py-2 text-sm outline-none focus:border-[#087CFA]" /></label>
+                <div className="flex flex-wrap gap-2"><button onClick={() => savePost(post.id)} disabled={busy === `post-${post.id}` || !postText.trim()} className="rounded-xl bg-[#087CFA] px-3 py-2 text-xs font-extrabold text-white disabled:opacity-50">{postWhen ? "Save & schedule" : "Save draft"}</button><button onClick={() => publishNow(post.id)} disabled={busy === `post-${post.id}`} className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white disabled:opacity-50"><Send size={12} />Publish now</button><button onClick={() => deletePostRow(post.id)} disabled={busy === `post-${post.id}`} className="ml-auto inline-flex items-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-700 disabled:opacity-50"><Trash2 size={12} />Delete</button></div>
+              </div> : <p className="mt-1.5 line-clamp-3 whitespace-pre-wrap text-sm text-[#33526E]">{post.content}</p>}
+            </div>) : <p className="text-xs text-[#58748D]">No content yet. Turn on automation and run the agent from the Automation tab.</p>}</div>
+            <p className="mt-3 text-[11px] text-[#6B839B]">Publishing sends to connected channels; without a live channel it is safely simulated.</p>
+          </Panel>}
+
+          {tab === "inbox" && <Panel title="Inbox" subtitle="Messages from this client's connected channels.">
+            <div className="mt-3 space-y-2">{conversations.length ? conversations.map((convo) => <div key={convo.id} className="rounded-xl border border-[#D6E2EE] p-3">
+              <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold text-[#03142E]">{convo.contactName || convo.contactHandle || "Contact"}</span><Chip>{convo.channel}</Chip>{convo.unread > 0 && <span className="rounded-full bg-[#087CFA] px-2 py-0.5 text-[10px] font-black text-white">{convo.unread} new</span>}<span className="ml-auto text-[10px] text-[#6B839B]">{convo.lastMessageAt ? new Date(convo.lastMessageAt).toLocaleString() : ""}</span></div>
+              {convo.lastMessagePreview && <p className="mt-1 line-clamp-2 text-xs text-[#58748D]">{convo.lastMessagePreview}</p>}
+              {canManage && <div className="mt-2">{replyTo === convo.id ? <div className="flex gap-2"><input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Type a reply…" className="flex-1 rounded-xl border border-[#C4D5E6] bg-white px-3 py-2 text-sm outline-none focus:border-[#087CFA]" /><button onClick={() => sendReply(convo.id)} disabled={busy === `reply-${convo.id}` || !replyText.trim()} className="inline-flex items-center gap-1 rounded-xl bg-[#087CFA] px-3 py-2 text-xs font-extrabold text-white disabled:opacity-50"><Send size={12} />Send</button></div> : <button onClick={() => { setReplyTo(convo.id); setReplyText(""); }} className="text-[11px] font-black uppercase tracking-wider text-[#0758C9]">Reply</button>}</div>}
+            </div>) : <p className="text-xs text-[#58748D]">No messages yet. When a channel is connected, this client&apos;s conversations appear here.</p>}</div>
           </Panel>}
 
           {tab === "pillars" && <Panel title="Content pillars" subtitle="Themes the agent drafts content from. Only active pillars are used.">
@@ -196,6 +253,12 @@ export function SmmAccountWorkspace({ account, posts, canManage, canApprove, use
   </main>;
 }
 
+// ISO string → value for <input type="datetime-local"> in local time.
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 function NavItem({ icon, label, active, onClick, badge }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: string | number }) {
   return <button onClick={onClick} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition ${active ? "bg-[#03142E] text-white" : "text-[#405E78] hover:bg-[#F1F5FA]"}`}><span className={active ? "text-[#72E4F6]" : "text-[#7794AD]"}>{icon}</span><span className="flex-1 text-left">{label}</span>{badge !== undefined && <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-black ${active ? "bg-[#22D3EE] text-[#03142E]" : "bg-[#087CFA] text-white"}`}>{badge}</span>}</button>;
 }
